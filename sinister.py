@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
 
 from gi.repository import Gtk as gtk, Gdk as gdk
 import cairo
