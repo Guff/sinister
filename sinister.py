@@ -5,19 +5,11 @@ import cairo
 
 from math import sin, gamma, lgamma
 
-def frange(start, stop=None, step=1):
-    if stop is None:
-        start, stop = 0, start
-    
-    r = start
-    while r <= stop - step / 2:
-        yield r
-        r += step
-
 class Viewport(object):
-    def __init__(self, min_x, max_x, min_y, max_y):
+    def __init__(self, min_x, max_x, min_y, max_y, x_ticks, y_ticks):
         self.min_x, self.max_x = min_x, max_x
         self.min_y, self.max_y = min_y, max_y
+        self.x_ticks, self.y_ticks = x_ticks, y_ticks
 
 class PlotConf(object):
     def __init__(self, width, height, min_step=0.5, max_step=3):
@@ -138,6 +130,31 @@ class PlotBg(Plottable):
         
         cr.set_source_rgb(0, 0, 0)
         cr.stroke()
+        
+        self.draw_ticks(cr)
+    
+    def draw_ticks(self, cr):
+        min_x, max_x = self.viewport.min_x, self.viewport.max_x
+        min_y, max_y = self.viewport.min_y, self.viewport.max_y
+        x_ticks = self.viewport.x_ticks
+        y_ticks = self.viewport.y_ticks
+        
+        x = min_x - (min_x % x_ticks)
+        while x <= max_x:
+            window_x, window_y = self.coords_to_window(x, 0)
+            cr.move_to(window_x, window_y - 4)
+            cr.line_to(window_x, window_y + 4)
+            x += x_ticks
+        
+        y = min_y - (min_y % y_ticks)
+        while y <= max_y:
+            window_x, window_y = self.coords_to_window(0, y)
+            cr.move_to(window_x - 4, window_y)
+            cr.line_to(window_x + 4, window_y)
+            y += y_ticks
+        
+        cr.set_line_width(1)
+        cr.stroke()
 
 class PlotArea(gtk.DrawingArea):
     def __init__(self, viewport):
@@ -192,7 +209,7 @@ class PlotArea(gtk.DrawingArea):
         self.plots.append(plot)
 
 if __name__ == '__main__':
-    viewport = Viewport(-10, 10, -10, 10)
+    viewport = Viewport(-10, 10, -10, 10, 1, 1)
     
     window = gtk.Window()
     window.set_default_size(400, 300)
