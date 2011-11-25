@@ -44,20 +44,25 @@ class Plottable(object):
         cr.set_source_surface(self.surface)
         cr.paint()
     
-    def coords_to_window(self, px, py):
+    def plot_to_window(self, px, py):
         min_x, max_x = self.viewport.min_x, self.viewport.max_x
         min_y, max_y = self.viewport.min_y, self.viewport.max_y
         width, height = self.width, self.height
+        
         wx = (px - min_x) * width / (max_x - min_x)
         wy = (py - max_y) * height / (min_y - max_y)
         
         return (wx, wy)
     
-    def window_to_coords(self, wx):
+    def window_to_plot(self, wx, wy):
         min_x, max_x = self.viewport.min_x, self.viewport.max_x
-        width = self.width
+        min_y, max_y = self.viewport.min_y, self.viewport.max_y
+        width, height = self.width, self.height
         
-        return (max_x - min_x) * wx / width + min_x
+        px = (max_x - min_x) * wx / width + min_x
+        py = (min_y - max_y) * wy / height + max_y
+        
+        return (px, py)
 
 class FunctionPlot(Plottable):
     def __init__(self, func):
@@ -105,17 +110,17 @@ class FunctionPlot(Plottable):
             return (y, self.max_step)
     
     def __call__(self, window_x):
-        plot_x = self.window_to_coords(window_x)
+        plot_x, _ = self.window_to_plot(window_x, 0)
         try:
             plot_y = self.func(plot_x)
-            x, y = self.coords_to_window(0, plot_y)
+            _, y = self.plot_to_window(0, plot_y)
             return y
         except:
             return None
 
 class PlotBg(Plottable):
     def draw(self):
-        origin_x, origin_y = self.coords_to_window(0, 0)
+        origin_x, origin_y = self.plot_to_window(0, 0)
         
         cr = cairo.Context(self.surface)
         
@@ -141,14 +146,14 @@ class PlotBg(Plottable):
         
         x = min_x - (min_x % x_ticks)
         while x <= max_x:
-            window_x, window_y = self.coords_to_window(x, 0)
+            window_x, window_y = self.plot_to_window(x, 0)
             cr.move_to(window_x, window_y - 4)
             cr.line_to(window_x, window_y + 4)
             x += x_ticks
         
         y = min_y - (min_y % y_ticks)
         while y <= max_y:
-            window_x, window_y = self.coords_to_window(0, y)
+            window_x, window_y = self.plot_to_window(0, y)
             cr.move_to(window_x - 4, window_y)
             cr.line_to(window_x + 4, window_y)
             y += y_ticks
@@ -208,6 +213,60 @@ class PlotArea(gtk.DrawingArea):
         plot.viewport = self.viewport
         self.plots.append(plot)
 
+class PlotStatusBar(gtk.HBox):
+    def __init__(self):
+        super().__init__(False, 2)
+        
+        self.coords_label = gtk.Label()
+        self.pack_start(self.coords_label, True, True, 2)
+        self.coords_label.set_halign(gtk.Align.END)
+        self.coords_label.set_use_markup(True)
+    
+    def update_coords(self, x, y):
+        self.coords_label.set_label("<tt>x: {: >14.8G} y: {: >14.8G}</tt>".format(x, y))
+    
+    def clear_coords(self):
+        self.coords_label.set_label("")
+
+class PlotContainer(gtk.VBox):
+    def __init__(self, plot_area):
+        super().__init__(False, 2)
+        
+        self.plot_area = plot_area
+        self.pack_start(self.plot_area, True, True, 2)
+        
+        self.status_bar = PlotStatusBar()
+        self.pack_start(self.status_bar, False, False, 2)
+        
+        self.plot_area.set_can_focus(True)
+        self.plot_area.add_events(gdk.EventMask.LEAVE_NOTIFY_MASK
+                                | gdk.EventMask.BUTTON_PRESS_MASK
+                                | gdk.EventMask.BUTTON_RELEASE_MASK
+                                | gdk.EventMask.POINTER_MOTION_MASK
+                                | gdk.EventMask.POINTER_MOTION_HINT_MASK
+                                | gdk.EventMask.KEY_PRESS_MASK
+                                | gdk.EventMask.KEY_RELEASE_MASK
+                                | gdk.EventMask.SCROLL_MASK)
+        
+        # realize that this callback is called by the plot area widget, not
+        # the plot container widget. otherwise, accessing the status bar would
+        # be a hassle
+        def motion_notify_event(widget, event):
+            window_x, window_y = event.x, event.y
+            plot_x, plot_y = widget.plot_bg.window_to_plot(window_x, window_y)
+            self.status_bar.update_coords(plot_x, plot_y)
+            
+            return False
+        
+        # same as above
+        def leave_notify_event(widget, event):
+            self.status_bar.clear_coords()
+            
+            return False
+        
+        self.plot_area.connect("motion-notify-event", motion_notify_event)
+        self.plot_area.connect("leave-notify-event", leave_notify_event)
+
 if __name__ == '__main__':
     viewport = Viewport(-10, 10, -10, 10, 1, 1)
     
@@ -216,7 +275,9 @@ if __name__ == '__main__':
     
     plot = PlotArea(viewport)
     
-    window.add(plot)
+    plot_container = PlotContainer(plot)
+    
+    window.add(plot_container)
     
     window.connect("delete-event", gtk.main_quit)
     
