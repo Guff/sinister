@@ -19,9 +19,14 @@ class PlotConf(object):
 class Plottable(object):
     def __init__(self):
         self.viewport = None
-        self.width, self.height = None, None        
+        self.width, self.height = None, None      
+        
+        self.active = True  
         
         self.surface = None
+    
+    def toggle_active(self):
+        self.active = not self.active
     
     def draw(self):
         pass
@@ -41,6 +46,9 @@ class Plottable(object):
         self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, self.width, self.height)
     
     def plot(self, cr):
+        if not self.active:
+            return
+        
         cr.set_source_surface(self.surface)
         cr.paint()
     
@@ -211,7 +219,22 @@ class PlotArea(gtk.DrawingArea):
     
     def add_plot(self, plot):
         plot.viewport = self.viewport
+        
+        if self.width is not None and self.height is not None:
+            plot.resize(self.width, self.height)
+            plot.draw()
+        
         self.plots.append(plot)
+    
+    def refresh(self):
+        self.queue_draw()
+    
+    def remove_plot(self, plot):
+        try:
+            self.plots.remove(plot)
+            self.refresh()
+        except ValueError:
+            pass
 
 class PlotStatusBar(gtk.HBox):
     def __init__(self):
@@ -228,15 +251,94 @@ class PlotStatusBar(gtk.HBox):
     def clear_coords(self):
         self.coords_label.set_label("")
 
-class PlotContainer(gtk.VBox):
+class FunctionEntry(gtk.HBox):
     def __init__(self, plot_area):
-        super().__init__(False, 2)
+        super().__init__(False, 0)
         
         self.plot_area = plot_area
-        self.pack_start(self.plot_area, True, True, 2)
+        
+        self.active = True
+        self.plot = None
+        
+        self.entry = gtk.Entry()
+        self.pack_start(self.entry, True, True, 0)
+        
+        self.set_icon('gtk-yes')
+        self.set_icon_tooltip('Click to toggle plotting of this function')
+        self.entry.set_icon_activatable(gtk.EntryIconPosition.PRIMARY, True)
+        
+        self.okay = True
+        
+        def icon_release(widget, icon, event):
+            self.toggle()
+        
+        def activate(widget):
+            self.create_plot()
+        
+        def focus_out_event(widget, event):
+            self.create_plot()
+        
+        self.entry.connect('icon-release', icon_release)
+        self.entry.connect('activate', activate)
+        self.entry.connect('focus-out-event', focus_out_event)
+    
+    def create_plot(self):
+        text = self.entry.get_text()
+        
+        if self.plot is not None:
+            self.plot_area.remove_plot(self.plot)
+        
+        try:
+            self.plot = FunctionPlot(eval("lambda x: {}".format(text)))
+            self.set_icon_tooltip('Click to toggle plotting of this function')
+            self.plot_area.add_plot(self.plot)
+        
+            self.plot_area.refresh()
+        except Exception as e:
+            self.set_icon('error')
+            self.set_icon_tooltip('error creating function: {}'.format(e))
+            self.okay = False
+    
+    def toggle(self):
+        if self.plot is not None:
+            self.plot.toggle_active()
+            self.plot_area.refresh()
+        
+        self.active = not self.active
+        
+        if self.active:
+            self.set_icon('gtk-yes')
+        else:
+            self.set_icon('gtk-no')
+    
+    def set_icon(self, icon_name):
+        self.entry.set_icon_from_icon_name(gtk.EntryIconPosition.PRIMARY, icon_name)
+    
+    def set_icon_tooltip(self, text):
+        self.entry.set_icon_tooltip_text(gtk.EntryIconPosition.PRIMARY, text)
+
+class PlotConfig(gtk.VBox):
+    def __init__(self, plot_area):
+        super().__init__(False, 0)
+        
+        self.plot_area = plot_area
+
+class PlotContainer(gtk.VBox):
+    def __init__(self, plot_area):
+        super().__init__(False, 0)
+        
+        self.plot_area = plot_area
+        
+        self.function_entry = FunctionEntry(self.plot_area)
+        
+        self.pack_start(self.function_entry, False, False, 0)
+        self.pack_start(self.plot_area, True, True, 0)
+        
+        self.separator = gtk.HSeparator()
+        self.pack_start(self.separator, False, False, 0)
         
         self.status_bar = PlotStatusBar()
-        self.pack_start(self.status_bar, False, False, 2)
+        self.pack_start(self.status_bar, False, False, 0)
         
         self.plot_area.set_can_focus(True)
         self.plot_area.add_events(gdk.EventMask.LEAVE_NOTIFY_MASK
@@ -281,11 +383,11 @@ if __name__ == '__main__':
     
     window.connect("delete-event", gtk.main_quit)
     
-    func = FunctionPlot(gamma)
-    plot.add_plot(func)
+    #func = FunctionPlot(gamma)
+    #plot.add_plot(func)
     
-    func2 = FunctionPlot(sin)
-    plot.add_plot(func2)
+    #func2 = FunctionPlot(sin)
+    #plot.add_plot(func2)
     
     #window.maximize()
     window.show_all()
