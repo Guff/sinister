@@ -3,9 +3,10 @@
 from distutils.core import setup
 
 setup(
-    name = 'sinister',
-    version = '0.0.1',
+    name        = 'sinister',
+    version     = '0.0.1',
     description = 'Simple plotting program',
-    author = 'Guff',
-    scripts = ['sinister.py'],
+    author      = 'Guff',
+    scripts     = ['sinister.py'],
+    packages    = ['sinister']
     )
