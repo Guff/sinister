@@ -1,32 +1,33 @@
+from sinister.exceptions import FunctionCreationError
 from sinister.ui.widgets import FunctionEntry, PlotStatusBar
-from gi.repository import Gtk as gtk, Gdk as gdk
+from gi.repository import Gtk, Gdk
 
-class PlotContainer(gtk.VBox):
+class PlotContainer(Gtk.VBox):
     def __init__(self, plot_area):
         super().__init__(False, 0)
         
         self.plot_area = plot_area
         
-        self.function_entry = FunctionEntry(self.plot_area)
+        self.entry = FunctionEntry()
         
-        self.pack_start(self.function_entry, False, False, 0)
+        self.pack_start(self.entry, False, False, 0)
         self.pack_start(self.plot_area, True, True, 0)
         
-        self.separator = gtk.HSeparator()
+        self.separator = Gtk.HSeparator()
         self.pack_start(self.separator, False, False, 0)
         
         self.status_bar = PlotStatusBar()
         self.pack_start(self.status_bar, False, False, 0)
         
         self.plot_area.set_can_focus(True)
-        self.plot_area.add_events(gdk.EventMask.LEAVE_NOTIFY_MASK
-                                | gdk.EventMask.BUTTON_PRESS_MASK
-                                | gdk.EventMask.BUTTON_RELEASE_MASK
-                                | gdk.EventMask.POINTER_MOTION_MASK
-                                | gdk.EventMask.POINTER_MOTION_HINT_MASK
-                                | gdk.EventMask.KEY_PRESS_MASK
-                                | gdk.EventMask.KEY_RELEASE_MASK
-                                | gdk.EventMask.SCROLL_MASK)
+        self.plot_area.add_events(Gdk.EventMask.LEAVE_NOTIFY_MASK
+                                | Gdk.EventMask.BUTTON_PRESS_MASK
+                                | Gdk.EventMask.BUTTON_RELEASE_MASK
+                                | Gdk.EventMask.POINTER_MOTION_MASK
+                                | Gdk.EventMask.POINTER_MOTION_HINT_MASK
+                                | Gdk.EventMask.KEY_PRESS_MASK
+                                | Gdk.EventMask.KEY_RELEASE_MASK
+                                | Gdk.EventMask.SCROLL_MASK)
         
         # realize that this callback is called by the plot area widget, not
         # the plot container widget. otherwise, accessing the status bar would
@@ -44,6 +45,24 @@ class PlotContainer(gtk.VBox):
             
             return False
         
+        def entry_activate(widget):
+            plot = None
+            try:
+                widget.validate()
+            except FunctionCreationError:
+                pass
+            else:
+                if not widget.is_empty():
+                    plot = widget.create_plot()
+            
+            self.plot_area.update_plot(widget, plot)
+            
+            self.plot_area.refresh()
+        
+        def entry_toggle(widget):
+            self.plot_area.refresh()
+        
         self.plot_area.connect("motion-notify-event", motion_notify_event)
         self.plot_area.connect("leave-notify-event", leave_notify_event)
-
+        self.entry.connect("activate", entry_activate)
+        self.entry.connect("toggle", entry_toggle)

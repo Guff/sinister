@@ -1,7 +1,7 @@
 from sinister.plotters import PlotBg
-from gi.repository import Gtk as gtk
+from gi.repository import Gtk
 
-class PlotArea(gtk.DrawingArea):
+class PlotArea(Gtk.DrawingArea):
     def __init__(self, viewport):
         super().__init__()
         
@@ -12,10 +12,10 @@ class PlotArea(gtk.DrawingArea):
         self.plot_bg = PlotBg()
         self.plot_bg.set_viewport(self.viewport)
         
-        self.plots = []
+        self.plots = {}
         
         def delete_event(widget, event):
-            gtk.main_quit()
+            Gtk.main_quit()
             return False
         
         def draw_event(widget, cr):
@@ -31,6 +31,7 @@ class PlotArea(gtk.DrawingArea):
             widget.height = event.height
             
             widget.resize_window()
+            widget.refresh()
             return False
         
         self.connect("configure-event", configure_event)
@@ -38,25 +39,29 @@ class PlotArea(gtk.DrawingArea):
     
     def plot(self, cr):
         self.plot_bg.plot(cr)
-        for plot in self.plots:
-            plot.plot(cr)
+        for entry, plot in self.plots.items():
+            if entry.enabled:
+                plot.plot(cr)
     
     def resize_window(self):
         self.plot_bg.resize(self.width, self.height)
         self.plot_bg.draw()
         
-        for plot in self.plots:
+        for entry, plot in self.plots.items():
             plot.resize(self.width, self.height)
             plot.draw()
     
-    def add_plot(self, plot):
-        plot.viewport = self.viewport
-        
-        if self.width is not None and self.height is not None:
-            plot.resize(self.width, self.height)
-            plot.draw()
-        
-        self.plots.append(plot)
+    def update_plot(self, entry, plot):
+        if plot is None:
+            del self.plots[entry]
+        else:
+            plot.viewport = self.viewport
+            
+            if self.width is not None and self.height is not None:
+                plot.resize(self.width, self.height)
+                plot.draw()
+            
+            self.plots[entry] = plot
     
     def refresh(self):
         self.queue_draw()

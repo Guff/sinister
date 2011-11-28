@@ -5,7 +5,7 @@ class Plottable(object):
         self.viewport = None
         self.width, self.height = None, None      
         
-        self.active = True  
+        self.active = True
         self.surface = None
     
     def toggle_active(self):
