@@ -1,5 +1,5 @@
 from sinister.plotters import FunctionPlot
-from sinister.functions import functions
+from sinister.predefined_names import names
 from sinister.exceptions import FunctionCreationError
 
 from gi.repository import GObject, Gtk, Gdk
@@ -68,7 +68,7 @@ class FunctionEntry(Gtk.Entry):
         text = self.get_text()
         
         try:
-            self.function = eval('lambda x: {}'.format(text), functions)
+            self.function = eval('lambda x: {}'.format(text), names)
             self.valid = True
         except Exception as e:
             self.function = None
@@ -105,5 +105,5 @@ class FunctionEntry(Gtk.Entry):
             self.set_icon_from_icon_name(self.icon_pos, 'gtk-no')
             self.set_icon_tooltip_text(self.icon_pos, self.disabled_tooltip)
     
-    def create_plot(self):
-        return FunctionPlot(self.function)
+    def create_plot(self, viewport):
+        return FunctionPlot(viewport, self.function)

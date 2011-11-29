@@ -53,7 +53,7 @@ class PlotContainer(Gtk.VBox):
                 pass
             else:
                 if not widget.is_empty():
-                    plot = widget.create_plot()
+                    plot = widget.create_plot(self.plot_area.viewport)
             
             self.plot_area.update_plot(widget, plot)
             

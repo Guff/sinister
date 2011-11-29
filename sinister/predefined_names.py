@@ -8,3 +8,9 @@ functions.update({"pow": builtins.pow,
                   "round": builtins.round,
                   "abs": builtins.abs
                   })
+
+constants = {name: vars(math)[name] for name in ['pi', 'e']}
+
+names = {}
+names.update(functions)
+names.update(constants)
