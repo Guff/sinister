@@ -10,16 +10,19 @@ class Plottable(object):
         
         self.surface = None
         
-        def viewport_update(viewport_obj, prop):
+        def viewport_update(viewport_obj, param_spec):
             x_interval = (viewport_obj.min_x, viewport_obj.max_x)
             y_interval = (viewport_obj.min_y, viewport_obj.max_y)
             
-            if self.x_interval != x_interval and self.y_interval != y_interval:
+            if self.x_interval != x_interval or self.y_interval != y_interval:
                 self.x_interval = x_interval
                 self.y_interval = y_interval
                 self.draw()
         
-        self.viewport.connect('notify', viewport_update)
+        self.viewport.connect('notify::min-x', viewport_update)
+        self.viewport.connect('notify::max-x', viewport_update)
+        self.viewport.connect('notify::min-y', viewport_update)
+        self.viewport.connect('notify::max-y', viewport_update)
     
     def draw(self):
         pass

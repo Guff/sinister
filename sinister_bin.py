@@ -10,8 +10,8 @@ import cairo
 
 from math import sin, gamma, lgamma
 
-if __name__ == '__main__':
-    viewport = Viewport(-10, 10, -10, 10)
+def main():
+    viewport = Viewport(-10.0, 10.0, -10.0, 10.0)
     
     window = Gtk.Window()
     window.set_default_size(400, 300)
@@ -28,3 +28,6 @@ if __name__ == '__main__':
     window.show_all()
     
     Gtk.main()
+
+if __name__ == '__main__':
+    main()

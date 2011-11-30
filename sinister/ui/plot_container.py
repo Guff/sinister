@@ -1,5 +1,5 @@
 from sinister.exceptions import FunctionCreationError
-from sinister.ui.widgets import FunctionEntry, PlotStatusBar
+from sinister.ui.widgets import PlotControls, PlotStatusBar
 from gi.repository import Gtk, Gdk
 
 class PlotContainer(Gtk.VBox):
@@ -8,13 +8,13 @@ class PlotContainer(Gtk.VBox):
         
         self.plot_area = plot_area
         
-        self.entry = FunctionEntry()
+        self.plot_controls = PlotControls(self.plot_area.viewport)
         
-        self.pack_start(self.entry, False, False, 0)
+        self.pack_start(self.plot_controls, False, False, 0)
+        self.pack_start(Gtk.HSeparator(), False, False, 0)
         self.pack_start(self.plot_area, True, True, 0)
         
-        self.separator = Gtk.HSeparator()
-        self.pack_start(self.separator, False, False, 0)
+        self.pack_start(Gtk.HSeparator(), False, False, 0)
         
         self.status_bar = PlotStatusBar()
         self.pack_start(self.status_bar, False, False, 0)
@@ -64,5 +64,5 @@ class PlotContainer(Gtk.VBox):
         
         self.plot_area.connect("motion-notify-event", motion_notify_event)
         self.plot_area.connect("leave-notify-event", leave_notify_event)
-        self.entry.connect("activate", entry_activate)
-        self.entry.connect("toggle", entry_toggle)
+        self.plot_controls.entry.connect("activate", entry_activate)
+        self.plot_controls.entry.connect("toggle", entry_toggle)

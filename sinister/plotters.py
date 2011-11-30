@@ -12,8 +12,10 @@ class FunctionPlot(Plottable):
         width, height = self.dimensions
         
         cr = cairo.Context(self.surface)
-        cr.set_line_width(1.0)
-        
+        cr.set_operator(cairo.OPERATOR_CLEAR)
+        cr.paint()
+        cr.set_operator(cairo.OPERATOR_OVER)
+                
         for window_x in range(width + 1):
             window_y = self(window_x)
             if window_y is None:
@@ -21,6 +23,7 @@ class FunctionPlot(Plottable):
             
             cr.line_to(window_x, window_y)
         
+        cr.set_line_width(1.0)
         cr.set_source_rgb(0, 0, 0)
         cr.stroke()
     
@@ -35,7 +38,7 @@ class FunctionPlot(Plottable):
             return window_y
 
 class PlotBg(Plottable):
-    def __init__(self, viewport, ticks=(1, 1)):
+    def __init__(self, viewport, ticks=(1.0, 1.0)):
         super().__init__(viewport)
         
         self.ticks = ticks

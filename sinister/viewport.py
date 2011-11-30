@@ -1,6 +1,6 @@
 from gi.repository import GObject
 
-class Viewport(GObject.Object):
+class Viewport(GObject.GObject):
     min_x = GObject.property(type=float)
     max_x = GObject.property(type=float)
     min_y = GObject.property(type=float)

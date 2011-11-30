@@ -2,6 +2,7 @@ from sinister.plotters import FunctionPlot
 from sinister.predefined_names import names
 from sinister.exceptions import FunctionCreationError
 
+from sys import float_info
 from gi.repository import GObject, Gtk, Gdk
 
 class PlotStatusBar(Gtk.HBox):
@@ -107,3 +108,78 @@ class FunctionEntry(Gtk.Entry):
     
     def create_plot(self, viewport):
         return FunctionPlot(viewport, self.function)
+
+def create_interval_control(value):
+    adjustment = Gtk.Adjustment(value, -float_info.max, float_info.max, 0.5, 1.0, 0.0)
+    
+    return Gtk.SpinButton.new(adjustment, 0.5, 8)
+        
+class ViewportControls(Gtk.Table):
+    def __init__(self, viewport):
+        super().__init__(2, 2, True)
+        
+        min_x, max_x = viewport.min_x, viewport.max_x
+        min_y, max_y = viewport.min_y, viewport.max_y
+        
+        self.viewport = viewport
+        
+        self.min_x_spin = create_interval_control(min_x)
+        self.max_x_spin = create_interval_control(max_x)
+        self.min_y_spin = create_interval_control(min_y)
+        self.max_y_spin = create_interval_control(max_y)
+        
+        self.attach(self.min_x_spin,
+                    0, 1,
+                    0, 1,
+                    Gtk.AttachOptions.SHRINK, Gtk.AttachOptions.SHRINK,
+                    6, 4)
+        
+        self.attach(self.max_x_spin,
+                    1, 2,
+                    0, 1,
+                    Gtk.AttachOptions.SHRINK, Gtk.AttachOptions.SHRINK,
+                    6, 4)
+        
+        self.attach(self.min_y_spin,
+                    0, 1,
+                    1, 2,
+                    Gtk.AttachOptions.SHRINK, Gtk.AttachOptions.SHRINK,
+                    6, 4)
+        
+        self.attach(self.max_y_spin,
+                    1, 2,
+                    1, 2,
+                    Gtk.AttachOptions.SHRINK, Gtk.AttachOptions.SHRINK,
+                    6, 4)
+        
+        def viewport_changed(widget, control_name):
+            print(self.viewport.get_property(control_name))
+            self.viewport.set_property(control_name, widget.get_value())
+            print(self.viewport.get_property(control_name))
+        
+        self.min_x_spin.connect('value-changed', viewport_changed, 'min-x')
+        self.max_x_spin.connect('value-changed', viewport_changed, 'max-x')
+        self.min_y_spin.connect('value-changed', viewport_changed, 'min-y')
+        self.max_y_spin.connect('value-changed', viewport_changed, 'max-y')
+
+class PlotControls(Gtk.Table):
+    def __init__(self, viewport):
+        super().__init__(2, 1, False)
+        
+        self.viewport = viewport
+        self.entry = FunctionEntry()
+        self.viewport_controls = ViewportControls(self.viewport)
+        
+        self.attach(self.entry,
+                    0, 1,
+                    0, 1,
+                    Gtk.AttachOptions.EXPAND | Gtk.AttachOptions.FILL,
+                    Gtk.AttachOptions.SHRINK,
+                    8, 4)
+        
+        self.attach(self.viewport_controls,
+                    1, 2,
+                    0, 1,
+                    Gtk.AttachOptions.SHRINK,
+                    Gtk.AttachOptions.EXPAND | Gtk.AttachOptions.FILL,
+                    8, 4)
