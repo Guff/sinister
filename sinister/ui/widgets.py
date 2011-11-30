@@ -42,7 +42,7 @@ class FunctionEntry(Gtk.Entry):
         self.update_icon_and_tooltip()
         self.set_icon_activatable(Gtk.EntryIconPosition.PRIMARY, True)
         
-        def icon_release(widget, icon, event):
+        def icon_press(widget, icon, event):
             widget.toggle()
             
             return False
@@ -58,7 +58,7 @@ class FunctionEntry(Gtk.Entry):
             
             return False
         
-        self.connect('icon-release', icon_release)
+        self.connect('icon-press', icon_press)
         self.connect('focus-out-event', focus_out_event)
         self.connect('key-press-event', key_press_event)
     
@@ -81,7 +81,10 @@ class FunctionEntry(Gtk.Entry):
         self.enabled = not self.enabled
         
         if self.enabled:
-            self.validate()
+            try:
+                self.validate()
+            except FunctionCreationError:
+                pass
         
         self.update_icon_and_tooltip()
         

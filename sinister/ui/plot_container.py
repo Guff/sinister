@@ -55,6 +55,8 @@ class PlotContainer(Gtk.VBox):
                 if not widget.is_empty():
                     plot = widget.create_plot(self.plot_area.viewport)
             
+            widget.update_icon_and_tooltip()
+            
             self.plot_area.update_plot(widget, plot)
             
             self.plot_area.refresh()
