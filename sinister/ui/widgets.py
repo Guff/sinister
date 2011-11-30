@@ -69,7 +69,9 @@ class FunctionEntry(Gtk.Entry):
         text = self.get_text()
         
         try:
-            self.function = eval('lambda x: {}'.format(text), names)
+            if not self.is_empty():
+                self.function = eval('lambda x: {}'.format(text), names)
+            
             self.valid = True
         except Exception as e:
             self.function = None
@@ -112,11 +114,19 @@ class FunctionEntry(Gtk.Entry):
     def create_plot(self, viewport):
         return FunctionPlot(viewport, self.function)
 
-def create_interval_control(value):
-    adjustment = Gtk.Adjustment(value, -float_info.max, float_info.max, 0.5, 1.0, 0.0)
-    
-    return Gtk.SpinButton.new(adjustment, 0.5, 8)
+class IntervalControl(Gtk.HBox):
+    def __init__(self, name, value):
+        super().__init__(False, 2)
         
+        adjustment = Gtk.Adjustment(value, -float_info.max, float_info.max, 0.5, 1.0, 0.0)
+        self.spin = Gtk.SpinButton()
+        self.spin.configure(adjustment, 0.5, 8)
+        
+        self.label = Gtk.Label(name)
+        
+        self.pack_start(self.label, True, True, 2)
+        self.pack_start(self.spin, False, False, 2)
+    
 class ViewportControls(Gtk.Table):
     def __init__(self, viewport):
         super().__init__(2, 2, True)
@@ -126,44 +136,64 @@ class ViewportControls(Gtk.Table):
         
         self.viewport = viewport
         
-        self.min_x_spin = create_interval_control(min_x)
-        self.max_x_spin = create_interval_control(max_x)
-        self.min_y_spin = create_interval_control(min_y)
-        self.max_y_spin = create_interval_control(max_y)
+        self.min_x_box = IntervalControl('x min', min_x)
+        self.max_x_box = IntervalControl('x max', max_x)
+        self.min_y_box = IntervalControl('y min', min_y)
+        self.max_y_box = IntervalControl('y max', max_y)
         
-        self.attach(self.min_x_spin,
+        self.attach(self.min_x_box,
                     0, 1,
                     0, 1,
                     Gtk.AttachOptions.SHRINK, Gtk.AttachOptions.SHRINK,
                     6, 4)
         
-        self.attach(self.max_x_spin,
+        self.attach(self.max_x_box,
                     1, 2,
                     0, 1,
                     Gtk.AttachOptions.SHRINK, Gtk.AttachOptions.SHRINK,
                     6, 4)
         
-        self.attach(self.min_y_spin,
+        self.attach(self.min_y_box,
                     0, 1,
                     1, 2,
                     Gtk.AttachOptions.SHRINK, Gtk.AttachOptions.SHRINK,
                     6, 4)
         
-        self.attach(self.max_y_spin,
+        self.attach(self.max_y_box,
                     1, 2,
                     1, 2,
                     Gtk.AttachOptions.SHRINK, Gtk.AttachOptions.SHRINK,
                     6, 4)
         
-        def viewport_changed(widget, control_name):
-            print(self.viewport.get_property(control_name))
-            self.viewport.set_property(control_name, widget.get_value())
-            print(self.viewport.get_property(control_name))
+        def viewport_change(widget, control_name):
+            widget.emit_stop_by_name('value-changed')
+            
+            value = widget.get_value()
+            value_dict = {control_name: value}
+            
+            if control_name == 'min-x':
+                if value >= self.viewport.get_property('max-x'):
+                    value_dict['max-x'] = value + 0.5
+                    self.max_x_box.spin.set_value(value_dict['max-x'])
+            elif control_name == 'max-x':
+                if value <= self.viewport.get_property('min-x'):
+                    value_dict['min-x'] = value - 0.5
+                    self.min_x_box.spin.set_value(value_dict['min-x'])
+            elif control_name == 'min-y':
+                if value >= self.viewport.get_property('max-y'):
+                    value_dict['max-y'] = value + 0.5
+                    self.max_y_box.spin.set_value(value_dict['max-y'])
+            elif control_name == 'max-y':
+                if value <= self.viewport.get_property('min-y'):
+                    value_dict['min-y'] = value - 0.5
+                    self.min_y_box.spin.set_value(value_dict['min-y'])
+            
+            self.viewport.update(value_dict)
         
-        self.min_x_spin.connect('value-changed', viewport_changed, 'min-x')
-        self.max_x_spin.connect('value-changed', viewport_changed, 'max-x')
-        self.min_y_spin.connect('value-changed', viewport_changed, 'min-y')
-        self.max_y_spin.connect('value-changed', viewport_changed, 'max-y')
+        self.min_x_box.spin.connect('value-changed', viewport_change, 'min-x')
+        self.max_x_box.spin.connect('value-changed', viewport_change, 'max-x')
+        self.min_y_box.spin.connect('value-changed', viewport_change, 'min-y')
+        self.max_y_box.spin.connect('value-changed', viewport_change, 'max-y')
 
 class PlotControls(Gtk.Table):
     def __init__(self, viewport):

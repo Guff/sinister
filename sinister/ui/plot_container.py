@@ -29,9 +29,6 @@ class PlotContainer(Gtk.VBox):
                                 | Gdk.EventMask.KEY_RELEASE_MASK
                                 | Gdk.EventMask.SCROLL_MASK)
         
-        # realize that this callback is called by the plot area widget, not
-        # the plot container widget. otherwise, accessing the status bar would
-        # be a hassle
         def motion_notify_event(widget, event):
             window_x, window_y = event.x, event.y
             plot_x, plot_y = widget.plot_bg.window_to_plot(window_x, window_y)
@@ -39,7 +36,6 @@ class PlotContainer(Gtk.VBox):
             
             return False
         
-        # same as above
         def leave_notify_event(widget, event):
             self.status_bar.clear_coords()
             

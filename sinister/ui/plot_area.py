@@ -24,18 +24,15 @@ class PlotArea(Gtk.DrawingArea):
             widget.dimensions = (event.width, event.height)
             
             widget.resize_window()
-            widget.refresh()
+            
             return False
         
-        def viewport_update(viewport_obj, param):
+        def viewport_update(viewport_obj):
             self.refresh()
         
         self.connect("configure-event", configure_event)
         self.connect("draw", draw_event)
-        self.viewport.connect_after("notify::min-x", viewport_update)
-        self.viewport.connect_after("notify::max-x", viewport_update)
-        self.viewport.connect_after("notify::min-y", viewport_update)
-        self.viewport.connect_after("notify::max-y", viewport_update)
+        self.viewport.connect_after("update", viewport_update)
     
     def plot(self, cr):
         self.plot_bg.plot(cr)
