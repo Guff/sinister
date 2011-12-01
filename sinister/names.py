@@ -1,3 +1,5 @@
+from sinister.config import conf
+
 import builtins
 import math
 

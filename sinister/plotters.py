@@ -1,5 +1,7 @@
 from sinister.plottable import Plottable
+from sinister.config import conf
 
+from gi.repository import Gdk
 import cairo
 
 class FunctionPlot(Plottable):
@@ -7,6 +9,8 @@ class FunctionPlot(Plottable):
         super().__init__(viewport)
         
         self.func = func
+        self.color = Gdk.RGBA()
+        self.color.parse(conf.function_plot.color)
     
     def draw(self):
         width, height = self.dimensions
@@ -24,7 +28,7 @@ class FunctionPlot(Plottable):
             cr.line_to(window_x, window_y)
         
         cr.set_line_width(1.0)
-        cr.set_source_rgb(0, 0, 0)
+        Gdk.cairo_set_source_rgba(cr, self.color)
         cr.stroke()
     
     def __call__(self, window_x):

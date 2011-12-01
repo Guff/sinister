@@ -4,6 +4,7 @@ from sinister.viewport import Viewport
 from sinister.plotters import PlotBg
 from sinister.ui.plot_area import PlotArea
 from sinister.ui.plot_container import PlotContainer
+from sinister.config import conf
 
 from gi.repository import Gtk, Gdk
 import cairo
@@ -11,10 +12,17 @@ import cairo
 from math import sin, gamma, lgamma
 
 def main():
-    viewport = Viewport(-10.0, 10.0, -10.0, 10.0)
+    viewport = Viewport(conf.viewport.default_min_x,
+                        conf.viewport.default_max_x,
+                        conf.viewport.default_min_y,
+                        conf.viewport.default_max_y)
     
     window = Gtk.Window()
-    window.set_default_size(400, 300)
+    if conf.window.maximize_on_start:
+        window.maximize()
+    else:
+        window.set_default_size(conf.window.default_width,
+                                conf.window.default_height)
     
     plot_bg = PlotBg(viewport)
     plot = PlotArea(viewport, plot_bg)

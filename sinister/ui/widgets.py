@@ -1,5 +1,5 @@
 from sinister.plotters import FunctionPlot
-from sinister.predefined_names import names
+from sinister.names import names
 from sinister.exceptions import FunctionCreationError
 
 from sys import float_info
@@ -22,7 +22,7 @@ class PlotStatusBar(Gtk.HBox):
 
 class FunctionEntry(Gtk.Entry):
     __gsignals__ = {
-        'toggle': (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, ()),
+        'toggle': (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, ())
     }
     
     def __init__(self):
