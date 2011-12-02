@@ -21,5 +21,8 @@ class Viewport(GObject.GObject):
             self.set_property(name, value_dict[name])
         
         self.emit('update')
+    
+    def __iter__(self):
+        return iter([self.min_x, self.max_x, self.min_y, self.max_y])
 
 GObject.type_register(Viewport)

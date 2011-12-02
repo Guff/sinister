@@ -73,12 +73,6 @@ class SinisterConfig(GObject.Object):
         
         self.conf_filename = os.path.join(self.conf_dir, 'sinister_config.py')
         g_conf_file = Gio.file_parse_name(self.conf_filename)
-        self.conf_file_monitor = g_conf_file.monitor(Gio.FileMonitorFlags.NONE, None)
-        
-        def monitor_change(config, file_object, new_file_object, event_type):
-            config.load_user_config()
-        
-        self.conf_file_monitor.connect_object('changed', monitor_change, self)
         
         self.names = NamesConfig()
         self.function_plot = FunctionPlotConfig()

@@ -1,3 +1,4 @@
+from gi.repository import GObject
 import cairo
 
 class Plottable(object):

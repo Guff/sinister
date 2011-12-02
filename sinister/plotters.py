@@ -5,13 +5,14 @@ from gi.repository import Gdk
 import cairo
 
 class FunctionPlot(Plottable):
+    
     def __init__(self, viewport, func):
         super().__init__(viewport)
         
         self.func = func
         self.color = Gdk.RGBA()
         self.color.parse(conf.function_plot.color)
-    
+            
     def draw(self):
         width, height = self.dimensions
         

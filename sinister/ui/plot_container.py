@@ -19,16 +19,6 @@ class PlotContainer(Gtk.VBox):
         self.status_bar = PlotStatusBar()
         self.pack_start(self.status_bar, False, False, 0)
         
-        self.plot_area.set_can_focus(True)
-        self.plot_area.add_events(Gdk.EventMask.LEAVE_NOTIFY_MASK
-                                | Gdk.EventMask.BUTTON_PRESS_MASK
-                                | Gdk.EventMask.BUTTON_RELEASE_MASK
-                                | Gdk.EventMask.POINTER_MOTION_MASK
-                                | Gdk.EventMask.POINTER_MOTION_HINT_MASK
-                                | Gdk.EventMask.KEY_PRESS_MASK
-                                | Gdk.EventMask.KEY_RELEASE_MASK
-                                | Gdk.EventMask.SCROLL_MASK)
-        
         def motion_notify_event(widget, event):
             window_x, window_y = event.x, event.y
             plot_x, plot_y = widget.plot_bg.window_to_plot(window_x, window_y)
