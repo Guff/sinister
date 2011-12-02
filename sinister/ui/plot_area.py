@@ -31,30 +31,27 @@ class PlotArea(Gtk.DrawingArea):
             self.refresh()
         
         def button_press(widget, event):
-            if event.button != 1:
-                return True
+            if event.button != 1 or event.type != Gdk.EventType.BUTTON_PRESS:
+                return False
             
             allocation = widget.get_allocation()
             width, height = allocation.width, allocation.height
-            x0, y0 = event.x, event.y
+            prev_coords = {'x': event.x, 'y': event.y}
             
-            min_x_0, max_x_0 = widget.viewport.min_x, widget.viewport.max_x
-            min_y_0, max_y_0 = widget.viewport.min_y, widget.viewport.max_y
-            
-            viewport_width = max_x_0 - min_x_0
-            viewport_height = max_y_0 - min_y_0
+            viewport_width = widget.viewport.max_x - widget.viewport.min_x
+            viewport_height = widget.viewport.max_y - widget.viewport.min_y
             
             x_ratio = viewport_width / width
             y_ratio = viewport_height / height
             
             def motion_notify(widget, event):
-                dx = x_ratio * (event.x - x0)
-                dy = y_ratio * (event.y - y0)
-                widget.viewport.update({'min-x': min_x_0 - dx,
-                                        'max-x': max_x_0 - dx,
-                                        'min-y': min_y_0 + dy,
-                                        'max-y': max_y_0 + dy
-                                        })
+                x, y = event.x, event.y
+                dx = x_ratio * (x - prev_coords['x'])
+                dy = y_ratio * (y - prev_coords['y'])
+                widget.viewport.translate(dx, dy)
+                
+                prev_coords['x'] = x
+                prev_coords['y'] = y
             
             def button_release(widget, event, handles):
                 if event.button == 1:

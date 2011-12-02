@@ -170,22 +170,22 @@ class ViewportControls(Gtk.Table):
             value = widget.get_value()
             value_dict = {control_name: value}
             
-            if control_name == 'min-x':
-                if value >= self.viewport.get_property('max-x'):
-                    value_dict['max-x'] = value + 0.5
-                    self.max_x_box.spin.set_value(value_dict['max-x'])
-            elif control_name == 'max-x':
-                if value <= self.viewport.get_property('min-x'):
-                    value_dict['min-x'] = value - 0.5
-                    self.min_x_box.spin.set_value(value_dict['min-x'])
-            elif control_name == 'min-y':
-                if value >= self.viewport.get_property('max-y'):
-                    value_dict['max-y'] = value + 0.5
-                    self.max_y_box.spin.set_value(value_dict['max-y'])
-            elif control_name == 'max-y':
-                if value <= self.viewport.get_property('min-y'):
-                    value_dict['min-y'] = value - 0.5
-                    self.min_y_box.spin.set_value(value_dict['min-y'])
+            if control_name == 'min_x':
+                if value >= self.viewport.max_x:
+                    value_dict['max_x'] = value + 0.5
+                    self.max_x_box.spin.set_value(value_dict['max_x'])
+            elif control_name == 'max_x':
+                if value <= self.viewport.min_x:
+                    value_dict['min_x'] = value - 0.5
+                    self.min_x_box.spin.set_value(value_dict['min_x'])
+            elif control_name == 'min_y':
+                if value >= self.viewport.max_y:
+                    value_dict['max_y'] = value + 0.5
+                    self.max_y_box.spin.set_value(value_dict['max_y'])
+            elif control_name == 'max_y':
+                if value <= self.viewport.min_y:
+                    value_dict['min_y'] = value - 0.5
+                    self.min_y_box.spin.set_value(value_dict['min_y'])
             
             self.viewport.update(value_dict)
         
@@ -208,10 +208,10 @@ class ViewportControls(Gtk.Table):
             min_y_box.spin.handler_unblock_by_func(change_viewport)
             max_y_box.spin.handler_unblock_by_func(change_viewport)
         
-        self.min_x_box.spin.connect('value-changed', change_viewport, 'min-x')
-        self.max_x_box.spin.connect('value-changed', change_viewport, 'max-x')
-        self.min_y_box.spin.connect('value-changed', change_viewport, 'min-y')
-        self.max_y_box.spin.connect('value-changed', change_viewport, 'max-y')
+        self.min_x_box.spin.connect('value-changed', change_viewport, 'min_x')
+        self.max_x_box.spin.connect('value-changed', change_viewport, 'max_x')
+        self.min_y_box.spin.connect('value-changed', change_viewport, 'min_y')
+        self.max_y_box.spin.connect('value-changed', change_viewport, 'max_y')
         
         self.viewport.connect_object('update', viewport_update, self)
     

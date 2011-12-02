@@ -26,22 +26,30 @@ class Plottable(object):
     def plot(self, cr):
         pass
     
-    def plot_to_window(self, plot_x, plot_y):
-        min_x, max_x = self.x_interval
-        min_y, max_y = self.y_interval
+    def plot_to_window(self, px=None, py=None):
         width, height = self.dimensions
+        x, y = None, None
         
-        window_x = (plot_x - min_x) * width / (max_x - min_x)
-        window_y = (plot_y - max_y) * height / (min_y - max_y)
+        if px is not None:
+            min_x, max_x = self.x_interval
+            x = (px - min_x) * width / (max_x - min_x)
         
-        return (window_x, window_y)
+        if py is not None:
+            min_y, max_y = self.y_interval
+            y = (py - max_y) * height / (min_y - max_y)
+        
+        return (x, y) if None not in (x, y) else x or y
     
-    def window_to_plot(self, window_x, window_y):
-        min_x, max_x = self.x_interval
-        min_y, max_y = self.y_interval
+    def window_to_plot(self, wx=None, wy=None):
         width, height = self.dimensions
+        x, y = None, None
         
-        plot_x = (max_x - min_x) * window_x / width + min_x
-        plot_y = (min_y - max_y) * window_y / height + max_y
+        if wx is not None:
+            min_x, max_x = self.x_interval
+            x = (max_x - min_x) * wx / width + min_x
         
-        return (plot_x, plot_y)
+        if wy is not None:
+            min_y, max_y = self.y_interval
+            y = (min_y - max_y) * wy / height + max_y
+        
+        return (x, y) if None not in (x, y) else x or y
