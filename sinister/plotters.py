@@ -68,26 +68,30 @@ class PlotBg(Plottable):
         
         cr.set_source_rgb(0, 0, 0)
         cr.stroke()
-    
+        
     def draw_ticks(self, cr):
         min_x, max_x = self.x_interval
         min_y, max_y = self.y_interval
         x_ticks, y_ticks = self.ticks
+        width, height = self.dimensions
+        window_x_ticks = x_ticks * width / (max_x - min_x)
+        window_y_ticks = y_ticks * height / (max_y - min_y)
+        
+        cr.set_line_width(8)
+        cr.set_source_rgb(0, 0, 0)
         
         plot_x = min_x - (min_x % x_ticks)
-        while plot_x <= max_x:
-            window_x, window_y = self.plot_to_window(plot_x, 0)
-            cr.move_to(window_x, window_y - 4)
-            cr.line_to(window_x, window_y + 4)
-            plot_x += x_ticks
+        window_x, window_y = self.plot_to_window(plot_x, 0)
+        cr.move_to(window_x, window_y)
+        cr.line_to(width, window_y)
         
-        plot_y = min_y - (min_y % y_ticks)
-        while plot_y <= max_y:
-            window_x, window_y = self.plot_to_window(0, plot_y)
-            cr.move_to(window_x - 4, window_y)
-            cr.line_to(window_x + 4, window_y)
-            plot_y += y_ticks
-        
-        cr.set_line_width(1)
+        cr.set_dash([1.0, window_x_ticks - 1], 0.5)
         cr.stroke()
-
+        
+        plot_y = max_y - (max_y % y_ticks)
+        window_x, window_y = self.plot_to_window(0, plot_y)
+        cr.move_to(window_x, window_y)
+        cr.line_to(window_x, height)
+        
+        cr.set_dash([1.0, window_y_ticks - 1], 0.5)
+        cr.stroke()
