@@ -5,7 +5,6 @@ from gi.repository import Gdk
 import cairo
 
 class FunctionPlot(Plottable):
-    
     def __init__(self, viewport, func):
         super().__init__(viewport)
         
@@ -13,24 +12,27 @@ class FunctionPlot(Plottable):
         self.color = Gdk.RGBA()
         self.color.parse(conf.function_plot.color)
             
-    def draw(self):
+    def plot(self, cr):
         width, height = self.dimensions
         
-        cr = cairo.Context(self.surface)
-        cr.set_operator(cairo.OPERATOR_CLEAR)
-        cr.paint()
+        cr.save()
         cr.set_operator(cairo.OPERATOR_OVER)
-                
+        
         for window_x in range(width + 1):
             window_y = self(window_x)
             if window_y is None:
                 continue
             
-            cr.line_to(window_x, window_y)
+            if window_y < -50 or window_y > height + 50:
+                cr.new_sub_path()
+            else:
+                cr.line_to(window_x, window_y)
         
         cr.set_line_width(1.0)
         Gdk.cairo_set_source_rgba(cr, self.color)
         cr.stroke()
+        
+        cr.restore()
     
     def __call__(self, window_x):
         plot_x, _ = self.window_to_plot(window_x, 0)
@@ -48,10 +50,11 @@ class PlotBg(Plottable):
         
         self.ticks = ticks
     
-    def draw(self):
-        cr = cairo.Context(self.surface)
+    def plot(self, cr):
+        cr.save()
         self.draw_axes(cr)
         self.draw_ticks(cr)
+        cr.restore()
     
     def draw_axes(self, cr):
         width, height = self.dimensions

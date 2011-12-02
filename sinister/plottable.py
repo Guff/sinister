@@ -9,8 +9,6 @@ class Plottable(object):
         
         self.dimensions = None
         
-        self.surface = None
-        
         def viewport_update(viewport_obj):
             x_interval = (viewport_obj.min_x, viewport_obj.max_x)
             y_interval = (viewport_obj.min_y, viewport_obj.max_y)
@@ -18,25 +16,15 @@ class Plottable(object):
             if self.x_interval != x_interval or self.y_interval != y_interval:
                 self.x_interval = x_interval
                 self.y_interval = y_interval
-                self.draw()
         
         self.viewport.connect('update', viewport_update)
-    
-    def draw(self):
-        pass
     
     def resize(self, dimensions):
         if self.dimensions != dimensions:
             self.dimensions = dimensions
         
-            if self.surface is not None:
-                self.surface.finish()
-            
-            self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, *self.dimensions)
-    
     def plot(self, cr):
-        cr.set_source_surface(self.surface)
-        cr.paint()
+        pass
     
     def plot_to_window(self, plot_x, plot_y):
         min_x, max_x = self.x_interval

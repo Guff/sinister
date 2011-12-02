@@ -30,12 +30,8 @@ few things it does do:
     and vice versa. then, a bézier curve could be drawn between each pair of
     points, making use of the derivatives to calculate the control points.
     a potential drawback is that cairo might draw curves substantially slower
-    than line segments. i dunno. i'll look into it 
-* dragging the plot area around to change the viewport works as far as i can
-    tell, but it's slow to the point of being unusable. i'll do some profiling
-    first, but the first thing that comes to mind is buffering. i.e. make each
-    plot surface's size some multiple of the widget's size and on each redraw,
-    draw the entire surface. then, a redraw would only be needed when the limits
-    of the surface are exceeded. but this seems less than ideal. perhaps the
-    possible plotting speed-up mentioned above would make redraws quick enough
-    so that dragging wouldn't matter
+    than line segments. i dunno. i'll look into it
+    
+    as it turns out, double-buffering the plots by drawing to image surfaces
+    is a horrible idea. a massive speed up came from simply drawing directly to
+    the window through the context provided by draw events.

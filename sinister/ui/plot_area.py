@@ -94,11 +94,9 @@ class PlotArea(Gtk.DrawingArea):
     
     def resize_window(self):
         self.plot_bg.resize(self.dimensions)
-        self.plot_bg.draw()
         
         for entry, plot in self.plots.items():
             plot.resize(self.dimensions)
-            plot.draw()
     
     def update_plot(self, entry, plot):
         if plot is None:
@@ -106,7 +104,6 @@ class PlotArea(Gtk.DrawingArea):
                 del self.plots[entry]
         else:
             plot.resize(self.dimensions)
-            plot.draw()
             
             self.plots[entry] = plot
     
