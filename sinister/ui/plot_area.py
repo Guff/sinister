@@ -34,6 +34,8 @@ class PlotArea(Gtk.DrawingArea):
             if event.button != 1 or event.type != Gdk.EventType.BUTTON_PRESS:
                 return False
             
+            widget.get_window().set_cursor(Gdk.Cursor(Gdk.CursorType.HAND1))
+            
             allocation = widget.get_allocation()
             width, height = allocation.width, allocation.height
             prev_coords = {'x': event.x, 'y': event.y}
@@ -55,6 +57,7 @@ class PlotArea(Gtk.DrawingArea):
             
             def button_release(widget, event, handles):
                 if event.button == 1:
+                    widget.get_window().set_cursor(None)
                     widget.handler_disconnect(handles['motion'])
                     widget.handler_disconnect(handles['release'])
                     return True
