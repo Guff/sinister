@@ -68,6 +68,27 @@ class PlotArea(Gtk.DrawingArea):
             
             handles['motion'] = widget.connect('motion-notify-event', motion_notify)
         
+        def button_2_press(widget, event):
+            if event.button != 1 or event.type != Gdk.EventType._2BUTTON_PRESS:
+                return False
+            
+            min_x0, max_x0, min_y0, max_y0 = widget.viewport
+            plot_width = max_x0 - min_x0
+            plot_height = max_y0 - min_y0
+            
+            plot_x, plot_y = self.plot_bg.window_to_plot(event.x, event.y)
+            plot_x = min(max(plot_x, min_x0 + plot_width / 4), max_x0 - plot_width / 4)
+            plot_y = min(max(plot_y, min_y0 + plot_height / 4), max_y0 - plot_height / 4)
+            
+            new_limits = {'min_x': plot_x - plot_width / 4,
+                          'max_x': plot_x + plot_width / 4,
+                          'min_y': plot_y - plot_height / 4,
+                          'max_y': plot_y + plot_height / 4}
+            
+            widget.viewport.update(new_limits)
+            
+            return True
+        
         self.set_can_focus(True)
         self.add_events(Gdk.EventMask.LEAVE_NOTIFY_MASK
                       | Gdk.EventMask.BUTTON_PRESS_MASK
@@ -81,6 +102,7 @@ class PlotArea(Gtk.DrawingArea):
         self.connect('configure-event', configure_event)
         self.connect('draw', draw_event)
         self.viewport.connect_after('update', viewport_update)
+        self.connect('button-press-event', button_2_press)
         self.connect('button-press-event', button_press)
     
     def plot(self, cr):
