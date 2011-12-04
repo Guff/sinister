@@ -19,38 +19,37 @@ class PlotContainer(Gtk.VBox):
         self.status_bar = PlotStatusBar()
         self.pack_start(self.status_bar, False, False, 0)
         
-        def motion_notify_event(widget, event):
-            window_x, window_y = event.x, event.y
-            plot_x, plot_y = widget.plot_bg.window_to_plot(window_x, window_y)
-            self.status_bar.update_coords(plot_x, plot_y)
-            
-            return False
+        self.plot_area.connect("motion-notify-event", self.motion_notify_event)
+        self.plot_area.connect("leave-notify-event", self.leave_notify_event)
+        self.plot_controls.entry_list.connect("entry-update", self.entry_activate)
+        self.plot_controls.entry_list.connect("entry-toggle", self.entry_toggle)
+    
+    def motion_notify_event(self, widget, event):
+        window_x, window_y = event.x, event.y
+        plot_x, plot_y = widget.plot_bg.window_to_plot(window_x, window_y)
+        self.status_bar.update_coords(plot_x, plot_y)
         
-        def leave_notify_event(widget, event):
-            self.status_bar.clear_coords()
-            
-            return False
+        return False
+    
+    def leave_notify_event(self, widget, event):
+        self.status_bar.clear_coords()
         
-        def entry_activate(widget):
-            plot = None
-            try:
-                widget.validate()
-            except FunctionCreationError:
-                pass
-            else:
-                if not widget.is_empty():
-                    plot = widget.create_plot(self.plot_area.viewport)
-            
-            widget.update_icon_and_tooltip()
-            
-            self.plot_area.update_plot(widget, plot)
-            
-            self.plot_area.refresh()
+        return False
+    
+    def entry_toggle(self, widget, entry):
+        self.plot_area.refresh()
+    
+    def entry_activate(self, widget, entry):
+        plot = None
+        try:
+            entry.validate()
+        except FunctionCreationError:
+            pass
+        else:
+            if not entry.is_empty():
+                plot = entry.create_plot(self.plot_area.viewport)
         
-        def entry_toggle(widget):
-            self.plot_area.refresh()
+        entry.update_icon_and_tooltip()
         
-        self.plot_area.connect("motion-notify-event", motion_notify_event)
-        self.plot_area.connect("leave-notify-event", leave_notify_event)
-        self.plot_controls.entry.connect("activate", entry_activate)
-        self.plot_controls.entry.connect("toggle", entry_toggle)
+        self.plot_area.update_plot(entry, plot)
+        self.plot_area.refresh()

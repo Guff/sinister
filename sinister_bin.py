@@ -6,10 +6,14 @@ from sinister.ui.plot_area import PlotArea
 from sinister.ui.plot_container import PlotContainer
 from sinister.config import conf
 
+import gi
+gi.require_version('Gtk', '3.0')
+
 from gi.repository import Gtk, Gdk
 import cairo
 
 from math import sin, gamma, lgamma
+
 
 def main():
     viewport = Viewport(conf.viewport.default_min_x,

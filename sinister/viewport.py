@@ -1,6 +1,6 @@
 from gi.repository import GObject
 
-class Viewport(GObject.GObject):
+class Viewport(GObject.Object):
     __gsignals__ = {
         'update': (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, ()),
     }

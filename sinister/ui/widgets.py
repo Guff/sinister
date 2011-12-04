@@ -42,25 +42,9 @@ class FunctionEntry(Gtk.Entry):
         self.update_icon_and_tooltip()
         self.set_icon_activatable(Gtk.EntryIconPosition.PRIMARY, True)
         
-        def icon_press(widget, icon, event):
-            widget.toggle()
-            
-            return False
-        
-        def focus_out_event(widget, event):
-            widget.emit('activate')
-            
-            return False
-        
-        def key_press_event(widget, event):
-            if event.keyval == Gdk.KEY_Escape:
-                widget.clear()
-            
-            return False
-        
-        self.connect('icon-press', icon_press)
-        self.connect('focus-out-event', focus_out_event)
-        self.connect('key-press-event', key_press_event)
+        self.connect('icon-press', FunctionEntry.on_icon_press)
+        self.connect('focus-out-event', FunctionEntry.on_focus_out_event)
+        self.connect('key-press-event', FunctionEntry.on_key_press_event)
     
     def is_empty(self):
         return (len(self.get_text()) == 0)
@@ -113,6 +97,23 @@ class FunctionEntry(Gtk.Entry):
     
     def create_plot(self, viewport):
         return FunctionPlot(viewport, self.function)
+    
+    def on_icon_press(self, icon, event):
+        self.toggle()
+        
+        return False
+    
+    def on_focus_out_event(self, event):
+        self.emit('activate')
+        
+        return False
+    
+    def on_key_press_event(self, event):
+        if event.keyval == Gdk.KEY_Escape:
+            self.clear()
+            return True
+        
+        return False
 
 class IntervalControl(Gtk.HBox):
     def __init__(self, name, value):
@@ -164,80 +165,117 @@ class ViewportControls(Gtk.Table):
                     Gtk.AttachOptions.SHRINK, Gtk.AttachOptions.SHRINK,
                     6, 4)
         
-        def change_viewport(widget, control_name):
-            widget.emit_stop_by_name('value-changed')
-            
-            value = widget.get_value()
-            value_dict = {control_name: value}
-            
-            if control_name == 'min_x':
-                if value >= self.viewport.max_x:
-                    value_dict['max_x'] = value + 0.5
-                    self.max_x_box.spin.set_value(value_dict['max_x'])
-            elif control_name == 'max_x':
-                if value <= self.viewport.min_x:
-                    value_dict['min_x'] = value - 0.5
-                    self.min_x_box.spin.set_value(value_dict['min_x'])
-            elif control_name == 'min_y':
-                if value >= self.viewport.max_y:
-                    value_dict['max_y'] = value + 0.5
-                    self.max_y_box.spin.set_value(value_dict['max_y'])
-            elif control_name == 'max_y':
-                if value <= self.viewport.min_y:
-                    value_dict['min_y'] = value - 0.5
-                    self.min_y_box.spin.set_value(value_dict['min_y'])
-            
-            self.viewport.update(value_dict)
+        self.min_x_box.spin.connect('value-changed', self.change_viewport, 'min_x')
+        self.max_x_box.spin.connect('value-changed', self.change_viewport, 'max_x')
+        self.min_y_box.spin.connect('value-changed', self.change_viewport, 'min_y')
+        self.max_y_box.spin.connect('value-changed', self.change_viewport, 'max_y')
         
-        def viewport_update(controls):
-            min_x_box, max_x_box, min_y_box, max_y_box = controls
-            min_x, max_x, min_y, max_y = controls.viewport
-            
-            min_x_box.spin.handler_block_by_func(change_viewport)
-            max_x_box.spin.handler_block_by_func(change_viewport)
-            min_y_box.spin.handler_block_by_func(change_viewport)
-            max_y_box.spin.handler_block_by_func(change_viewport)
-            
-            min_x_box.spin.set_value(min_x)
-            max_x_box.spin.set_value(max_x)
-            min_y_box.spin.set_value(min_y)
-            max_y_box.spin.set_value(max_y)
-            
-            min_x_box.spin.handler_unblock_by_func(change_viewport)
-            max_x_box.spin.handler_unblock_by_func(change_viewport)
-            min_y_box.spin.handler_unblock_by_func(change_viewport)
-            max_y_box.spin.handler_unblock_by_func(change_viewport)
-        
-        self.min_x_box.spin.connect('value-changed', change_viewport, 'min_x')
-        self.max_x_box.spin.connect('value-changed', change_viewport, 'max_x')
-        self.min_y_box.spin.connect('value-changed', change_viewport, 'min_y')
-        self.max_y_box.spin.connect('value-changed', change_viewport, 'max_y')
-        
-        self.viewport.connect_object('update', viewport_update, self)
+        self.viewport.connect('update', self.viewport_update)
     
     def __iter__(self):
-        """This is really only defined for the unpacking statement used in 
+        """This is really only defined for the unpacking statement used in
         the viewport_update callback defined in __init__. I know, it's silly"""
         return iter([self.min_x_box, self.max_x_box, self.min_y_box, self.max_y_box])
+    
+    def viewport_update(self, viewport):
+        for box, value in zip(self, viewport):
+            box.spin.set_value(value)
+    
+    def change_viewport(self, widget, control_name):
+        widget.emit_stop_by_name('value-changed')
+        
+        value = widget.get_value()
+        value_dict = {control_name: value}
+        
+        if control_name == 'min_x':
+            if value >= self.viewport.max_x:
+                value_dict['max_x'] = value + 0.5
+                self.max_x_box.spin.set_value(value_dict['max_x'])
+        elif control_name == 'max_x':
+            if value <= self.viewport.min_x:
+                value_dict['min_x'] = value - 0.5
+                self.min_x_box.spin.set_value(value_dict['min_x'])
+        elif control_name == 'min_y':
+            if value >= self.viewport.max_y:
+                value_dict['max_y'] = value + 0.5
+                self.max_y_box.spin.set_value(value_dict['max_y'])
+        elif control_name == 'max_y':
+            if value <= self.viewport.min_y:
+                value_dict['min_y'] = value - 0.5
+                self.min_y_box.spin.set_value(value_dict['min_y'])
+        
+        self.viewport.update(value_dict)
 
-class PlotControls(Gtk.Table):
+class FunctionEntryList(Gtk.Grid):
+    __gsignals__ = {
+        'entry-update': (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, (FunctionEntry,)),
+        'entry-remove': (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, (FunctionEntry,)),
+        'entry-toggle': (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, (FunctionEntry,))
+    }
+    
+    def __init__(self):
+        super().__init__()
+        
+        self.set_column_spacing(4)
+        self.set_row_homogeneous(True)
+        
+        top_entry = FunctionEntry()
+        self.entries = [top_entry]
+        
+        top_entry.set_hexpand(True)
+        top_entry.set_margin_left(4)
+        self.attach(top_entry, 0, 0, 1, 1)
+        
+        self.add_button = Gtk.Button.new_from_stock('gtk-add')
+        self.add_button.set_margin_right(4)
+        
+        self.attach_next_to(self.add_button, self.entries[-1], Gtk.PositionType.RIGHT, 1, 1)
+        
+        top_entry.connect('toggle', self.entry_toggle)
+        top_entry.connect('activate', self.entry_update)
+        self.add_button.connect('button-press-event', self.entry_add)
+    
+    def entry_update(self, entry):
+        self.emit('entry-update', entry)
+    
+    def entry_remove(self, entry):
+        self.entries.remove(entry)
+        self.emit('entry-remove', entry)
+    
+    def entry_toggle(self, entry):
+        self.emit('entry-toggle', entry)
+    
+    def entry_add(self, widget, event):
+        if event.button != 1:
+            return False
+        
+        entry = FunctionEntry()
+        entry.set_hexpand(True)
+        entry.set_margin_left(4)
+        
+        self.attach_next_to(entry, self.entries[-1], Gtk.PositionType.BOTTOM, 1, 1)
+        
+        self.entries.append(entry)
+        
+        self.remove(self.add_button)
+        self.attach_next_to(self.add_button, self.entries[-1], Gtk.PositionType.RIGHT, 1, 1)
+        
+        entry.connect('toggle', self.entry_toggle)
+        entry.connect('activate', self.entry_update)
+        entry.show()
+        
+        return False
+
+class PlotControls(Gtk.VBox):
     def __init__(self, viewport):
-        super().__init__(2, 1, False)
+        super().__init__(False, 2)
         
         self.viewport = viewport
-        self.entry = FunctionEntry()
+        self.entry_list = FunctionEntryList()
         self.viewport_controls = ViewportControls(self.viewport)
         
-        self.attach(self.entry,
-                    0, 1,
-                    0, 1,
-                    Gtk.AttachOptions.EXPAND | Gtk.AttachOptions.FILL,
-                    Gtk.AttachOptions.SHRINK,
-                    8, 4)
+        #self.entry.set_hexpand(True)
+        #self.viewport_controls.set_vexpand(True)
         
-        self.attach(self.viewport_controls,
-                    1, 2,
-                    0, 1,
-                    Gtk.AttachOptions.SHRINK,
-                    Gtk.AttachOptions.EXPAND | Gtk.AttachOptions.FILL,
-                    8, 4)
+        self.pack_start(self.viewport_controls, False, False, 2)
+        self.pack_start(self.entry_list, False, False, 2)

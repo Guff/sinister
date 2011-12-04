@@ -9,15 +9,16 @@ class Plottable(object):
         
         self.dimensions = None
         
-        def viewport_update(viewport_obj):
-            x_interval = (viewport_obj.min_x, viewport_obj.max_x)
-            y_interval = (viewport_obj.min_y, viewport_obj.max_y)
-            
-            if self.x_interval != x_interval or self.y_interval != y_interval:
-                self.x_interval = x_interval
-                self.y_interval = y_interval
         
-        self.viewport.connect('update', viewport_update)
+        self.viewport.connect_object('update', Plottable.viewport_update, self)
+    
+    def viewport_update(self):
+        x_interval = (self.viewport.min_x, self.viewport.max_x)
+        y_interval = (self.viewport.min_y, self.viewport.max_y)
+        
+        if self.x_interval != x_interval or self.y_interval != y_interval:
+            self.x_interval = x_interval
+            self.y_interval = y_interval
     
     def resize(self, dimensions):
         if self.dimensions != dimensions:

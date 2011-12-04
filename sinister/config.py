@@ -64,7 +64,7 @@ class NamesConfig(GObject.Object):
     def __delitem__(self, key):
         del self.names[key]
 
-class SinisterConfig(GObject.Object):
+class SinisterConfig(object):
     def __init__(self):
         self.conf_dir = os.path.join(GLib.get_user_config_dir(), 'sinister')
         g_conf_dir = Gio.file_parse_name(self.conf_dir)
@@ -81,12 +81,14 @@ class SinisterConfig(GObject.Object):
     
     def load_user_config(self):
         try:
-            conf_str = open(self.conf_filename).read()
+            conf_file = open(self.conf_filename)
         except IOError:
             pass
         else:
+            conf_str = conf_file.read()
             code = compile(conf_str, self.conf_filename, 'exec')
             exec(code, {'conf': self})
+            conf_file.close()
 
 conf = SinisterConfig()
 conf.load_user_config()
