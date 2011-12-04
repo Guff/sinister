@@ -22,7 +22,8 @@ class PlotStatusBar(Gtk.HBox):
 
 class FunctionEntry(Gtk.Entry):
     __gsignals__ = {
-        'toggle': (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, ())
+        'toggle': (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, ()),
+        'remove-button-press': (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, ())
     }
     
     def __init__(self):
@@ -33,16 +34,17 @@ class FunctionEntry(Gtk.Entry):
         self.error = None
         self.function = None
         
-        self.icon_pos = Gtk.EntryIconPosition.PRIMARY
-        
         self.valid_tooltip = 'Click to disable plotting of this function'
         self.invalid_tooltip = 'error creating function: {}'
         self.disabled_tooltip = 'Click to enable plotting of this function'
         
-        self.update_icon_and_tooltip()
+        self.update_status_icon_and_tooltip()
         self.set_icon_activatable(Gtk.EntryIconPosition.PRIMARY, True)
         
-        self.connect('icon-press', FunctionEntry.on_icon_press)
+        self.set_icon_activatable(Gtk.EntryIconPosition.SECONDARY, True)
+        
+        self.connect('icon-press', FunctionEntry.on_status_icon_press)
+        self.connect('icon-press', FunctionEntry.on_remove_icon_press)
         self.connect('focus-out-event', FunctionEntry.on_focus_out_event)
         self.connect('key-press-event', FunctionEntry.on_key_press_event)
     
@@ -72,7 +74,7 @@ class FunctionEntry(Gtk.Entry):
             except FunctionCreationError:
                 pass
         
-        self.update_icon_and_tooltip()
+        self.update_status_icon_and_tooltip()
         
         self.emit('toggle')
     
@@ -80,40 +82,52 @@ class FunctionEntry(Gtk.Entry):
         self.set_text('')
         self.function = None
         self.valid = True
-        self.update_icon_and_tooltip()
+        self.update_status_icon_and_tooltip()
         self.emit('activate')
     
-    def update_icon_and_tooltip(self):
+    def update_status_icon_and_tooltip(self):
+        icon_pos = Gtk.EntryIconPosition.PRIMARY
         if self.enabled:
             if self.valid:
-                self.set_icon_from_icon_name(self.icon_pos, 'gtk-yes')
-                self.set_icon_tooltip_text(self.icon_pos, self.valid_tooltip)
+                self.set_icon_from_icon_name(icon_pos, 'gtk-yes')
+                self.set_icon_tooltip_text(icon_pos, self.valid_tooltip)
             else:
-                self.set_icon_from_icon_name(self.icon_pos, 'error')
-                self.set_icon_tooltip_text(self.icon_pos, self.invalid_tooltip.format(self.error))
+                self.set_icon_from_icon_name(icon_pos, 'error')
+                self.set_icon_tooltip_text(icon_pos, self.invalid_tooltip.format(self.error))
         else:
-            self.set_icon_from_icon_name(self.icon_pos, 'gtk-no')
-            self.set_icon_tooltip_text(self.icon_pos, self.disabled_tooltip)
+            self.set_icon_from_icon_name(icon_pos, 'gtk-no')
+            self.set_icon_tooltip_text(icon_pos, self.disabled_tooltip)
     
     def create_plot(self, viewport):
         return FunctionPlot(viewport, self.function)
     
-    def on_icon_press(self, icon, event):
-        self.toggle()
+    def on_status_icon_press(self, icon, event):
+        if icon == Gtk.EntryIconPosition.PRIMARY and event.button == 1:
+            self.toggle()
         
         return False
     
     def on_focus_out_event(self, event):
         self.emit('activate')
-        
         return False
     
     def on_key_press_event(self, event):
         if event.keyval == Gdk.KEY_Escape:
             self.clear()
-            return True
         
         return False
+    
+    def on_remove_icon_press(self, icon, event):
+        if icon == Gtk.EntryIconPosition.SECONDARY and event.button == 1:
+            self.emit('remove-button-press')
+        
+        return False
+    
+    def show_remove_icon(self):
+        self.set_icon_from_icon_name(Gtk.EntryIconPosition.SECONDARY, 'gtk-remove')
+    
+    def hide_remove_icon(self):
+        self.set_icon_from_icon_name(Gtk.EntryIconPosition.SECONDARY, None)
 
 class IntervalControl(Gtk.HBox):
     def __init__(self, name, value):
@@ -230,25 +244,30 @@ class FunctionEntryList(Gtk.Grid):
         self.add_button.set_margin_right(4)
         
         self.attach_next_to(self.add_button, self.entries[-1], Gtk.PositionType.RIGHT, 1, 1)
-        
+                
         top_entry.connect('toggle', self.entry_toggle)
         top_entry.connect('activate', self.entry_update)
-        self.add_button.connect('button-press-event', self.entry_add)
+        top_entry.connect('remove-button-press', self.entry_remove)
+        self.add_button.connect('clicked', self.entry_add)
     
     def entry_update(self, entry):
         self.emit('entry-update', entry)
     
     def entry_remove(self, entry):
         self.entries.remove(entry)
+        self.remove(entry)
+        
+        if len(self.entries) == 1:
+            self.entries[0].hide_remove_icon()
+        
+        self.update_add_button_position()
+        
         self.emit('entry-remove', entry)
     
     def entry_toggle(self, entry):
         self.emit('entry-toggle', entry)
     
-    def entry_add(self, widget, event):
-        if event.button != 1:
-            return False
-        
+    def entry_add(self, widget):
         entry = FunctionEntry()
         entry.set_hexpand(True)
         entry.set_margin_left(4)
@@ -257,14 +276,23 @@ class FunctionEntryList(Gtk.Grid):
         
         self.entries.append(entry)
         
-        self.remove(self.add_button)
-        self.attach_next_to(self.add_button, self.entries[-1], Gtk.PositionType.RIGHT, 1, 1)
+        self.update_add_button_position()
+        
+        for entry_widget in self.entries:
+            entry_widget.show_remove_icon()
         
         entry.connect('toggle', self.entry_toggle)
         entry.connect('activate', self.entry_update)
+        entry.connect('remove-button-press', self.entry_remove)
         entry.show()
         
-        return False
+        return True
+    
+    def update_add_button_position(self):
+        bottom_entry = self.entries[-1]
+        
+        self.remove(self.add_button)
+        self.attach_next_to(self.add_button, bottom_entry, Gtk.PositionType.RIGHT, 1, 1)
 
 class PlotControls(Gtk.VBox):
     def __init__(self, viewport):
@@ -273,9 +301,6 @@ class PlotControls(Gtk.VBox):
         self.viewport = viewport
         self.entry_list = FunctionEntryList()
         self.viewport_controls = ViewportControls(self.viewport)
-        
-        #self.entry.set_hexpand(True)
-        #self.viewport_controls.set_vexpand(True)
         
         self.pack_start(self.viewport_controls, False, False, 2)
         self.pack_start(self.entry_list, False, False, 2)

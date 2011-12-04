@@ -19,10 +19,11 @@ class PlotContainer(Gtk.VBox):
         self.status_bar = PlotStatusBar()
         self.pack_start(self.status_bar, False, False, 0)
         
-        self.plot_area.connect("motion-notify-event", self.motion_notify_event)
-        self.plot_area.connect("leave-notify-event", self.leave_notify_event)
-        self.plot_controls.entry_list.connect("entry-update", self.entry_activate)
-        self.plot_controls.entry_list.connect("entry-toggle", self.entry_toggle)
+        self.plot_area.connect('motion-notify-event', self.motion_notify_event)
+        self.plot_area.connect('leave-notify-event', self.leave_notify_event)
+        self.plot_controls.entry_list.connect('entry-update', self.entry_activate)
+        self.plot_controls.entry_list.connect('entry-toggle', self.entry_toggle)
+        self.plot_controls.entry_list.connect('entry-remove', self.entry_remove)
     
     def motion_notify_event(self, widget, event):
         window_x, window_y = event.x, event.y
@@ -37,7 +38,7 @@ class PlotContainer(Gtk.VBox):
         return False
     
     def entry_toggle(self, widget, entry):
-        self.plot_area.refresh()
+        self.plot_area.emit('refresh')
     
     def entry_activate(self, widget, entry):
         plot = None
@@ -49,7 +50,12 @@ class PlotContainer(Gtk.VBox):
             if not entry.is_empty():
                 plot = entry.create_plot(self.plot_area.viewport)
         
-        entry.update_icon_and_tooltip()
+        entry.update_status_icon_and_tooltip()
         
-        self.plot_area.update_plot(entry, plot)
-        self.plot_area.refresh()
+        if plot is not None:
+            self.plot_area.update_plot(entry, plot)
+        else:
+            self.plot_area.remove_plot(entry)
+    
+    def entry_remove(self, widget, entry):
+        self.plot_area.remove_plot(entry)

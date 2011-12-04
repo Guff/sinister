@@ -1,7 +1,11 @@
 from sinister.plotters import PlotBg
-from gi.repository import Gtk, Gdk
+from gi.repository import GObject, Gtk, Gdk
 
 class PlotArea(Gtk.DrawingArea):
+    __gsignals__ = {
+        'refresh': (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, ())
+    }
+    
     def __init__(self, viewport, plot_bg):
         super().__init__()
         
@@ -22,15 +26,15 @@ class PlotArea(Gtk.DrawingArea):
                       | Gdk.EventMask.KEY_RELEASE_MASK
                       | Gdk.EventMask.SCROLL_MASK)
         
-        self.connect('configure-event', PlotArea.configure_event)
-        self.connect('draw', PlotArea.draw_event)
+        self.connect('configure-event', PlotArea.on_configure_event)
+        self.connect('draw', PlotArea.on_draw_event)
         # make sure the plots et al. have all handled the viewport update
         # before we redraw
-        self.viewport.connect_object_after('update', PlotArea.refresh, self)
-        self.connect('button-press-event', PlotArea.button_2_press)
-        self.connect('button-press-event', PlotArea.button_press)
+        self.viewport.connect_after('update', self.on_viewport_update)
+        self.connect('button-press-event', PlotArea.on_button_2_press)
+        self.connect('button-press-event', PlotArea.on_button_press)
     
-    def draw_event(self, cr):
+    def on_draw_event(self, cr):
         self.plot(cr)
         return False
     
@@ -40,7 +44,7 @@ class PlotArea(Gtk.DrawingArea):
             if entry.enabled:
                 plot.plot(cr)
         
-    def button_press(self, event):
+    def on_button_press(self, event):
         if event.button != 1 or event.type != Gdk.EventType.BUTTON_PRESS:
             return False
         
@@ -56,7 +60,7 @@ class PlotArea(Gtk.DrawingArea):
         x_ratio = viewport_width / width
         y_ratio = viewport_height / height
         
-        def motion_notify(widget, event):
+        def on_motion_notify(widget, event):
             x, y = event.x, event.y
             dx = x_ratio * (x - prev_coords['x'])
             dy = y_ratio * (y - prev_coords['y'])
@@ -65,7 +69,7 @@ class PlotArea(Gtk.DrawingArea):
             prev_coords['x'] = x
             prev_coords['y'] = y
         
-        def button_release(widget, event, handles):
+        def on_button_release(widget, event, handles):
             if event.button == 1:
                 widget.get_window().set_cursor(None)
                 widget.handler_disconnect(handles['motion'])
@@ -79,10 +83,10 @@ class PlotArea(Gtk.DrawingArea):
         # way i could think of to be able to disconnect the handles
         handles = {}
         
-        handles['release'] = self.connect('button-release-event', button_release, handles)
-        handles['motion'] = self.connect('motion-notify-event', motion_notify)
+        handles['release'] = self.connect('button-release-event', on_button_release, handles)
+        handles['motion'] = self.connect('motion-notify-event', on_motion_notify)
     
-    def button_2_press(self, event):
+    def on_button_2_press(self, event):
         if event.button != 1 or event.type != Gdk.EventType._2BUTTON_PRESS:
             return False
         
@@ -103,9 +107,9 @@ class PlotArea(Gtk.DrawingArea):
         
         return True
     
-    def configure_event(self, event):
+    def on_configure_event(self, event):
         if self.dimensions == (event.width, event.height):
-            return True
+            return False
         
         self.dimensions = (event.width, event.height)
         
@@ -120,13 +124,19 @@ class PlotArea(Gtk.DrawingArea):
             plot.resize(self.dimensions)
     
     def update_plot(self, entry, plot):
-        if plot is None:
-            if entry in self.plots:
-                del self.plots[entry]
-        else:
-            plot.resize(self.dimensions)
+        plot.resize(self.dimensions)
             
-            self.plots[entry] = plot
+        self.plots[entry] = plot
+        
+        self.emit('refresh')
     
-    def refresh(self):
+    def remove_plot(self, entry):
+        if entry in self.plots:
+            del self.plots[entry]
+            self.emit('refresh')
+    
+    def on_viewport_update(self, viewport):
+        self.emit('refresh')
+    
+    def do_refresh(self):
         self.queue_draw()
