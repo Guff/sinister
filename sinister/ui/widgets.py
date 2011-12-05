@@ -1,16 +1,17 @@
 from sinister.plotters import FunctionPlot
 from sinister.names import names
 from sinister.exceptions import FunctionCreationError
+from sinister.parse import parse_function
 
 from sys import float_info
 from gi.repository import GObject, Gtk, Gdk
 
 class PlotStatusBar(Gtk.HBox):
     def __init__(self):
-        super().__init__(False, 2)
+        super().__init__(False, 0)
         
         self.coords_label = Gtk.Label()
-        self.pack_start(self.coords_label, True, True, 2)
+        self.pack_start(self.coords_label, True, True, 0)
         self.coords_label.set_halign(Gtk.Align.END)
         self.coords_label.set_use_markup(True)
     
@@ -56,7 +57,7 @@ class FunctionEntry(Gtk.Entry):
         
         try:
             if not self.is_empty():
-                self.function = eval('lambda x: {}'.format(text), names)
+                self.function = parse_function(text, names)
             
             self.valid = True
         except Exception as e:
