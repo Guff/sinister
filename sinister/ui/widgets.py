@@ -140,8 +140,8 @@ class IntervalControl(Gtk.HBox):
         
         self.label = Gtk.Label(name)
         
-        self.pack_start(self.label, True, True, 2)
-        self.pack_start(self.spin, False, False, 2)
+        self.pack_start(self.label, True, True, 0)
+        self.pack_start(self.spin, False, False, 0)
     
 class ViewportControls(Gtk.Table):
     def __init__(self, viewport):
@@ -160,25 +160,25 @@ class ViewportControls(Gtk.Table):
                     0, 1,
                     0, 1,
                     Gtk.AttachOptions.SHRINK, Gtk.AttachOptions.SHRINK,
-                    6, 4)
+                    0, 0)
         
         self.attach(self.max_x_box,
                     1, 2,
                     0, 1,
                     Gtk.AttachOptions.SHRINK, Gtk.AttachOptions.SHRINK,
-                    6, 4)
+                    0, 0)
         
         self.attach(self.min_y_box,
                     0, 1,
                     1, 2,
                     Gtk.AttachOptions.SHRINK, Gtk.AttachOptions.SHRINK,
-                    6, 4)
+                    0, 0)
         
         self.attach(self.max_y_box,
                     1, 2,
                     1, 2,
                     Gtk.AttachOptions.SHRINK, Gtk.AttachOptions.SHRINK,
-                    6, 4)
+                    0, 0)
         
         self.min_x_box.spin.connect('value-changed', self.change_viewport, 'min_x')
         self.max_x_box.spin.connect('value-changed', self.change_viewport, 'max_x')
@@ -297,11 +297,11 @@ class FunctionEntryList(Gtk.Grid):
 
 class PlotControls(Gtk.VBox):
     def __init__(self, viewport):
-        super().__init__(False, 2)
+        super().__init__(False, 0)
         
         self.viewport = viewport
         self.entry_list = FunctionEntryList()
         self.viewport_controls = ViewportControls(self.viewport)
         
-        self.pack_start(self.viewport_controls, False, False, 2)
-        self.pack_start(self.entry_list, False, False, 2)
+        self.pack_start(self.viewport_controls, False, False, 0)
+        self.pack_start(self.entry_list, False, False, 0)

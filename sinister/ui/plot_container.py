@@ -9,16 +9,24 @@ class PlotContainer(Gtk.VBox):
         self.plot_area = plot_area
         
         self.plot_controls = PlotControls(self.plot_area.viewport)
+        scrolled_controls = Gtk.ScrolledWindow()
+        scrolled_controls.add_with_viewport(self.plot_controls)
         
-        self.pack_start(self.plot_controls, False, False, 0)
-        self.pack_start(Gtk.HSeparator(), False, False, 0)
-        self.pack_start(self.plot_area, True, True, 0)
+        vpane = Gtk.VPaned()
+        vpane.pack1(scrolled_controls, False, False)
+        vpane.pack2(self.plot_area, True, False)
+        
+        self.pack_start(vpane, True, True, 0)
         
         self.pack_start(Gtk.HSeparator(), False, False, 0)
         
         self.status_bar = PlotStatusBar()
         self.pack_start(self.status_bar, False, False, 0)
         
+        def resize_scrolled(widget, event=None):
+            scrolled_controls.set_min_content_height(widget.get_allocated_height() + 6)
+        
+        self.plot_controls.connect('realize', resize_scrolled)
         self.plot_area.connect('motion-notify-event', self.motion_notify_event)
         self.plot_area.connect('leave-notify-event', self.leave_notify_event)
         self.plot_controls.entry_list.connect('entry-update', self.entry_activate)
