@@ -131,6 +131,19 @@ class FunctionEntry(Gtk.Entry):
     def hide_remove_icon(self):
         self.set_icon_from_icon_name(Gtk.EntryIconPosition.SECONDARY, None)
 
+class FunctionEntryRow(Gtk.HBox):
+    def __init__(self):
+        super().__init__(False, 4)
+        
+        self.entry = FunctionEntry()
+        self.entry.set_hexpand(True)
+        self.entry.set_margin_left(4)
+        
+        self.button = Gtk.Button.new_from_stock('gtk-add')
+        
+        self.pack_start(self.entry, True, True, 2)
+        self.pack_start(self.button, False, False, 2)
+
 class IntervalControl(Gtk.HBox):
     def __init__(self, name, value):
         super().__init__(False, 2)
@@ -232,7 +245,7 @@ class FunctionEntryList(Gtk.VBox):
     def __init__(self):
         super().__init__(False, 0)
         
-        self.entry_rows = {}
+        self.entry_rows = []
         
         self.entry_add()
     
@@ -240,12 +253,12 @@ class FunctionEntryList(Gtk.VBox):
         self.emit('entry-update', entry)
     
     def entry_remove(self, entry, entry_row):
-        del self.entry_rows[entry_row]
+        self.entry_rows.remove(entry_row)
         self.remove(entry_row)
         
         if len(self.entry_rows) == 1:
-            entry_widget, _ = list(self.entry_rows.values())[0]
-            entry_widget.hide_remove_icon()
+            row = self.entry_rows[0]
+            row.entry.hide_remove_icon()
         
         self.emit('entry-remove', entry)
     
@@ -253,23 +266,16 @@ class FunctionEntryList(Gtk.VBox):
         self.emit('entry-toggle', entry)
     
     def entry_add(self, position=None):
-        entry = FunctionEntry()
-        entry.set_hexpand(True)
-        entry.set_margin_left(4)
+        entry_row = FunctionEntryRow()
         
-        button = Gtk.Button.new_from_stock('gtk-add')
-        
-        entry_row = Gtk.HBox(False, 4)
-        entry_row.pack_start(entry, True, True, 2)
-        entry_row.pack_start(button, False, False, 2)
-        
-        self.entry_rows[entry_row] = (entry, button)
+        self.entry_rows.append(entry_row)
         
         if len(self.entry_rows) > 1:
-            for entry_widget, _ in self.entry_rows.values():
-                entry_widget.show_remove_icon()
+            for row in self.entry_rows:
+                row.entry.show_remove_icon()
         
         self.pack_start(entry_row, True, True, 2)
+        
         if position is not None:
             self.reorder_child(entry_row, position)
         
@@ -282,10 +288,10 @@ class FunctionEntryList(Gtk.VBox):
             self.entry_add(value.get_int() + 1)
             return False
         
-        button.connect('clicked', on_button_click)
-        entry.connect('toggle', self.entry_toggle)
-        entry.connect('activate', self.entry_update)
-        entry.connect('remove-button-press', self.entry_remove, entry_row)
+        entry_row.button.connect('clicked', on_button_click)
+        entry_row.entry.connect('toggle', self.entry_toggle)
+        entry_row.entry.connect('activate', self.entry_update)
+        entry_row.entry.connect('remove-button-press', self.entry_remove, entry_row)
         
         return True
     
