@@ -110,6 +110,7 @@ class FunctionEntry(Gtk.Entry):
     
     def on_focus_out_event(self, event):
         self.emit('activate')
+        
         return False
     
     def on_key_press_event(self, event):
@@ -221,7 +222,7 @@ class ViewportControls(Gtk.Table):
         
         self.viewport.update(value_dict)
 
-class FunctionEntryList(Gtk.Grid):
+class FunctionEntryList(Gtk.VBox):
     __gsignals__ = {
         'entry-update': (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, (FunctionEntry,)),
         'entry-remove': (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, (FunctionEntry,)),
@@ -229,63 +230,62 @@ class FunctionEntryList(Gtk.Grid):
     }
     
     def __init__(self):
-        super().__init__()
+        super().__init__(False, 0)
         
-        self.set_column_spacing(4)
-        self.set_row_homogeneous(True)
+        self.entry_rows = {}
         
-        top_entry = FunctionEntry()
-        self.entries = [top_entry]
-        
-        top_entry.set_hexpand(True)
-        top_entry.set_margin_left(4)
-        self.attach(top_entry, 0, 0, 1, 1)
-        
-        self.add_button = Gtk.Button.new_from_stock('gtk-add')
-        self.add_button.set_margin_right(4)
-        
-        self.attach_next_to(self.add_button, self.entries[-1], Gtk.PositionType.RIGHT, 1, 1)
-                
-        top_entry.connect('toggle', self.entry_toggle)
-        top_entry.connect('activate', self.entry_update)
-        top_entry.connect('remove-button-press', self.entry_remove)
-        self.add_button.connect('clicked', self.entry_add)
+        self.entry_add()
     
     def entry_update(self, entry):
         self.emit('entry-update', entry)
     
-    def entry_remove(self, entry):
-        self.entries.remove(entry)
-        self.remove(entry)
+    def entry_remove(self, entry, entry_row):
+        del self.entry_rows[entry_row]
+        self.remove(entry_row)
         
-        if len(self.entries) == 1:
-            self.entries[0].hide_remove_icon()
-        
-        self.update_add_button_position()
+        if len(self.entry_rows) == 1:
+            entry_widget, _ = list(self.entry_rows.values())[0]
+            entry_widget.hide_remove_icon()
         
         self.emit('entry-remove', entry)
     
     def entry_toggle(self, entry):
         self.emit('entry-toggle', entry)
     
-    def entry_add(self, widget):
+    def entry_add(self, position=None):
         entry = FunctionEntry()
         entry.set_hexpand(True)
         entry.set_margin_left(4)
         
-        self.attach_next_to(entry, self.entries[-1], Gtk.PositionType.BOTTOM, 1, 1)
+        button = Gtk.Button.new_from_stock('gtk-add')
         
-        self.entries.append(entry)
+        entry_row = Gtk.HBox(False, 4)
+        entry_row.pack_start(entry, True, True, 2)
+        entry_row.pack_start(button, False, False, 2)
         
-        self.update_add_button_position()
+        self.entry_rows[entry_row] = (entry, button)
         
-        for entry_widget in self.entries:
-            entry_widget.show_remove_icon()
+        if len(self.entry_rows) > 1:
+            for entry_widget, _ in self.entry_rows.values():
+                entry_widget.show_remove_icon()
         
+        self.pack_start(entry_row, True, True, 2)
+        if position is not None:
+            self.reorder_child(entry_row, position)
+        
+        entry_row.show_all()
+        
+        def on_button_click(widget):
+            value = GObject.Value()
+            value.init(int)
+            self.child_get_property(entry_row, 'position', value)
+            self.entry_add(value.get_int() + 1)
+            return False
+        
+        button.connect('clicked', on_button_click)
         entry.connect('toggle', self.entry_toggle)
         entry.connect('activate', self.entry_update)
-        entry.connect('remove-button-press', self.entry_remove)
-        entry.show()
+        entry.connect('remove-button-press', self.entry_remove, entry_row)
         
         return True
     
