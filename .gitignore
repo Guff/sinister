@@ -1,3 +1,5 @@
 __pycache__
 *.prof
-
+build
+*.c
+*.so

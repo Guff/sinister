@@ -3,6 +3,9 @@ from gi.repository import GLib, Gio, GObject, Gdk
 import os.path
 import imp
 
+class GeneralConfig(GObject.Object):
+    use_cython = GObject.property(type=bool, default=False)
+
 class WindowConfig(GObject.Object):
     default_width     = GObject.property(type=int, default=500)
     default_height    = GObject.property(type=int, default=400)
@@ -74,6 +77,7 @@ class SinisterConfig(object):
         self.conf_filename = os.path.join(self.conf_dir, 'sinister_config.py')
         g_conf_file = Gio.file_parse_name(self.conf_filename)
         
+        self.general = GeneralConfig()
         self.names = NamesConfig()
         self.function_plot = FunctionPlotConfig()
         self.window = WindowConfig()

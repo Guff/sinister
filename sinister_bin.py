@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 
+from sinister.config import conf
 from sinister.viewport import Viewport
-from sinister.plotters import PlotBg
+if conf.general.use_cython:
+    from sinister.cplotters import PlotBg
+else:
+    from sinister.plotters import PlotBg
+
 from sinister.ui.plot_area import PlotArea
 from sinister.ui.plot_container import PlotContainer
-from sinister.config import conf
 
 import gi
 gi.require_version('Gtk', '3.0')

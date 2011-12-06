@@ -1,4 +1,10 @@
-from sinister.plotters import PlotBg
+from sinister.config import conf
+
+if conf.general.use_cython:
+    from sinister.cplotters import PlotBg
+else:
+    from sinister.plotters import PlotBg
+
 from gi.repository import GObject, Gtk, Gdk
 
 class PlotArea(Gtk.DrawingArea):
