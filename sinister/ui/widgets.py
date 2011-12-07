@@ -1,8 +1,5 @@
 from sinister.config import conf
-if conf.general.use_cython:
-    from sinister.cplotters import FunctionPlot
-else:
-    from sinister.plotters import FunctionPlot
+from sinister.plotters import FunctionPlot
 
 from sinister.names import names
 from sinister.exceptions import FunctionCreationError
