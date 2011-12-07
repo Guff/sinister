@@ -15,10 +15,12 @@ class FunctionPlot(Plottable):
     def plot(self, cr):
         width, height = self.dimensions
         
+        x0, y0, x1, y1 = cr.clip_extents()
+        
         cr.save()
         cr.set_operator(cairo.OPERATOR_OVER)
         
-        for window_x in range(width + 1):
+        for window_x in range(int(x0), int(x1) + 2):
             window_y = self(window_x)
             if window_y is None:
                 continue

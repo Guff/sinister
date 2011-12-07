@@ -1,3 +1,4 @@
+from sinister.config import conf
 from sinister.plotters import PlotBg
 
 from gi.repository import GObject, Gtk, Gdk
@@ -12,6 +13,9 @@ class PlotArea(Gtk.DrawingArea):
         
         self.viewport = viewport
         self.plot_bg = plot_bg
+        
+        self.button_press_mode = conf.plot_area.button_press_mode
+        self.zoom_rect = None
         
         self.dimensions = None
         
@@ -37,6 +41,8 @@ class PlotArea(Gtk.DrawingArea):
     
     def on_draw_event(self, cr):
         self.plot(cr)
+        if self.zoom_rect is not None:
+            self.draw_zoom_rect(cr)
         return False
     
     def plot(self, cr):
@@ -44,11 +50,90 @@ class PlotArea(Gtk.DrawingArea):
         for entry, plot in self.plots.items():
             if entry.enabled:
                 plot.plot(cr)
+    
+    def draw_zoom_rect(self, cr):
+        cr.save()
         
+        cr.rectangle(*self.zoom_rect)
+        cr.clip_preserve()
+        
+        cr.set_source_rgba(0.1, 0.3, 0.7, 0.7)
+        cr.set_line_width(4)
+        cr.stroke_preserve()
+        cr.set_source_rgba(0.1, 0.3, 0.9, 0.4)
+        cr.fill()
+        cr.restore()
+    
     def on_button_press(self, event):
-        if event.button != 1 or event.type != Gdk.EventType.BUTTON_PRESS:
+        if event.button == 1 and event.type == Gdk.EventType.BUTTON_PRESS:
+            if self.button_press_mode == 'drag':
+                self.button_press_drag(event)
+            elif self.button_press_mode == 'zoom-rect':
+                self.button_press_zoom_rect(event)
+        
+        return False
+    
+    def button_press_zoom_rect(self, event):
+        allocation = self.get_allocation()
+        width, height = allocation.width, allocation.height
+        
+        x, y = event.x, event.y
+        
+        def on_motion_notify(widget, event):
+            if widget.zoom_rect is not None:
+                # invalidate the region where the old rectangle was
+                widget.queue_draw_area(*widget.zoom_rect)
+            
+            x0, y0 = x, y
+            x1, y1 = event.x, event.y
+            
+            x0, x1 = (x0, x1) if x1 > x0 else (x1, x0)
+            y0, y1 = (y0, y1) if y1 > y0 else (y1, y0)
+            
+            # gdk uses doubles for pointer coordinates, but apparently ints
+            # (or truncated doubles) for clip regions
+            x0, y0, x1, y1 = map(int, (x0, y0, x1, y1))
+            
+            widget.zoom_rect = (x0, y0, x1 - x0, y1 - y0)
+            
+            widget.queue_draw_area(*widget.zoom_rect)
+            
             return False
         
+        def on_button_release(widget, event, handles):
+            if event.button != 1:
+                return False
+            
+            x0, y0 = x, y
+            x1, y1 = event.x, event.y
+            
+            x0, x1 = (x0, x1) if x1 > x0 else (x1, x0)
+            y0, y1 = (y0, y1) if y1 > y0 else (y1, y0)
+            
+            min_x, min_y = widget.plot_bg.window_to_plot(x0, y1)
+            max_x, max_y = widget.plot_bg.window_to_plot(x1, y0)
+            
+            widget.viewport.update({'min_x': min_x,
+                                    'max_x': max_x,
+                                    'min_y': min_y,
+                                    'max_y': max_y})
+            
+            widget.handler_disconnect(handles['motion'])
+            widget.handler_disconnect(handles['release'])
+            
+            widget.zoom_rect = None
+            
+            return False
+        
+        # passing a mutable container (a dict in this case), which is then
+        # updated to hold the handle IDs, to the release handler was the best
+        # way i could think of to be able to disconnect the handles
+        handles = {}
+        
+        handles['release'] = self.connect('button-release-event', on_button_release, handles)
+        handles['motion'] = self.connect('motion-notify-event', on_motion_notify)
+    
+    def button_press_drag(self, event):
         self.get_window().set_cursor(Gdk.Cursor(Gdk.CursorType.HAND1))
         
         allocation = self.get_allocation()

@@ -73,6 +73,9 @@ class ViewportConfig(BaseConfig):
 class FunctionPlotConfig(BaseConfig):
     settings = [Setting(name='plot_color', default='red')]
 
+class PlotAreaConfig(BaseConfig):
+    settings = [Setting(name='button_press_mode', default='drag')]
+
 class NamesConfig(BaseConfig):
     settings = [Setting(name='names', default={})]
 
@@ -91,6 +94,7 @@ class SinisterConfig(object):
         self.function_plot = FunctionPlotConfig()
         self.window = WindowConfig()
         self.viewport = ViewportConfig()
+        self.plot_area = PlotAreaConfig()
     
     def load_user_config(self):
         try:
