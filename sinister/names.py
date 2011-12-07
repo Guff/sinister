@@ -13,6 +13,6 @@ functions.update({"pow": builtins.pow,
 
 constants = {name: vars(math)[name] for name in ['pi', 'e']}
 
-names = {}
+names = conf.defined_names.names
 names.update(functions)
 names.update(constants)

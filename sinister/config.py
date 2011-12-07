@@ -1,71 +1,80 @@
-from gi.repository import GLib, Gio, GObject, Gdk
-
 import os.path
-import imp
 
-class GeneralConfig(GObject.Object):
-    use_cython = GObject.property(type=bool, default=False)
+from gi.repository import GLib, Gio
 
-class WindowConfig(GObject.Object):
-    default_width     = GObject.property(type=int, default=500)
-    default_height    = GObject.property(type=int, default=400)
-    maximize_on_start = GObject.property(type=bool, default=False)
-
-class ViewportConfig(GObject.Object):
-    default_min_x = GObject.property(type=float, default=-10.0)
-    default_max_x = GObject.property(type=float, default=10.0)
-    default_min_y = GObject.property(type=float, default=-10.0)
-    default_max_y = GObject.property(type=float, default=10.0)
-
-class FunctionPlotConfig(GObject.Object):
-    def get_plot_color(self):
-        return self._plot_color
+class Setting(object):
+    def __init__(self, name, default, desc=None):
+        self.name, self.default, self.desc = name, default, desc
     
-    def set_plot_color(self, color):
-        if is_valid_color(color):
-            self._plot_color = color
-        else:
-            raise UserWarning('"{}" is not a valid GDK color'.format(color))
+    def __repr__(self):
+        return 'Setting(name={s.name}, default={s.default}, desc={s.desc})'.format(s=self)
     
-    plot_color = GObject.property(type=str, default='black',
-                                  getter=get_plot_color, setter=set_plot_color)
+    def generate_docstring(self):
+        doc = '**{setting.name}**: {setting.desc}\n\t*default value*: {setting.default}'
+        return doc.format(setting=self)
+
+class ConfigMeta(type):
+    def __new__(mclass, class_name, bases, attrs):
+        attrs['__doc__'] = mclass.generate_docstring(class_name, attrs['settings'])
+        
+        return super().__new__(mclass, class_name, bases, attrs)
     
     @staticmethod
-    def is_valid_color(color):
-        return (Gdk.color_parse(color) is not None)
+    def generate_docstring(class_name, settings):
+        first_line = """Available settings are:\n"""
+        
+        setting_docs = []
+        for setting in settings:
+            setting_docs.append(setting.generate_docstring())
+        
+        return first_line + '\n'.join(setting_docs)
 
-class NamesConfig(GObject.Object):
-    __gsignals__ = {
-        'changed': (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, ())
-    }
+class BaseConfig(object, metaclass=ConfigMeta):
+    """Base class for sinister's single-instance configuration objects. Each
+    subclass overrides BaseConfig's properties attribute in order to specify
+    the specific settings and corresponding defaults of the subclass.
     
-    def __init__(self):
-        super().__init__()
+    The docstring describing the settings for each subclass is automatically
+    generated.
+    """
+    settings = []
+    def __init__(self, *args):
+        for new_setting in args:
+            old_settings = list(self.settings)
+            for index, old_setting in enumerate(old_settings):
+                if new_setting.name == old_setting.name:
+                    self.settings[index] = new_setting
+                    break
+            else:
+                err = '{setting} is not a valid {config.__class__.__name__} setting'
+                raise ValueError(err.format(config=self, setting=new_setting))
         
-        self.names = {}
+        for setting in self.settings:
+            setattr(self, setting.name, setting.default)
     
-    def emit_changed(method):
-        def wrapper(self, *args, **kwargs):
-            ret = method(self, *args, **kwargs)
-            self.emit('changed')
-            return ret
-        
-        return wrapper
+    def __repr__(self):
+        config_string = "{config.__class__.__name__}({params})"
+        return config_string.format(config=config, params=', '.join(map(str, self.settings)))
     
-    def __getattr__(self, name):
-        attr = getattr(self.names, name)
-        return emit_changed(attr) if callable(attr) else attr
-    
-    def __getitem__(self, key):
-        return self[key]
-    
-    @emit_changed
-    def __setitem__(self, key, value):
-        self.names[key] = value
-    
-    @emit_changed
-    def __delitem__(self, key):
-        del self.names[key]
+class GeneralConfig(BaseConfig):
+    settings = [Setting(name='use_cython', default=False)]
+
+class WindowConfig(BaseConfig):
+    settings = [Setting(name='default_width', default=500),
+                Setting(name='default_height', default=400),
+                Setting(name='maximize_on_start', default=False)]
+
+class ViewportConfig(BaseConfig):
+    settings = [Setting(name='default_min_x', default=-10.0),
+                Setting(name='default_max_x', default=10.0),
+                Setting(name='default_min_y', default=-10.0),
+                Setting(name='default_max_y', default=10.0)]
+
+class FunctionPlotConfig(BaseConfig):
+    settings = [Setting(name='plot_color', default='red')]
+
+class NamesConfig(BaseConfig):
+    settings = [Setting(name='names', default={})]
 
 class SinisterConfig(object):
     def __init__(self):
@@ -78,7 +87,7 @@ class SinisterConfig(object):
         g_conf_file = Gio.file_parse_name(self.conf_filename)
         
         self.general = GeneralConfig()
-        self.names = NamesConfig()
+        self.defined_names = NamesConfig()
         self.function_plot = FunctionPlotConfig()
         self.window = WindowConfig()
         self.viewport = ViewportConfig()
