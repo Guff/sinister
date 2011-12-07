@@ -9,8 +9,8 @@ class FunctionPlot(Plottable):
         super().__init__(viewport)
         
         self.func = func
-        self.color = Gdk.RGBA()
-        self.color.parse(conf.function_plot.color)
+        self.rgba = Gdk.RGBA()
+        self.rgba.parse(conf.function_plot.color)
     
     def plot(self, cr):
         width, height = self.dimensions
@@ -29,7 +29,7 @@ class FunctionPlot(Plottable):
                 cr.line_to(window_x, window_y)
         
         cr.set_line_width(1.0)
-        Gdk.cairo_set_source_rgba(cr, self.color)
+        Gdk.cairo_set_source_rgba(cr, self.rgba)
         cr.stroke()
         
         cr.restore()

@@ -12,6 +12,8 @@ class PlotContainer(Gtk.VBox):
         scrolled_controls = Gtk.ScrolledWindow()
         scrolled_controls.add_with_viewport(self.plot_controls)
         
+        adj = scrolled_controls.get_vadjustment()
+        
         vpane = Gtk.VPaned()
         vpane.pack1(scrolled_controls, False, False)
         vpane.pack2(self.plot_area, True, False)
@@ -26,29 +28,44 @@ class PlotContainer(Gtk.VBox):
         def resize_scrolled(widget, event=None):
             scrolled_controls.set_min_content_height(widget.get_allocated_height() + 6)
         
+        def scroll_to_entry(widget, event):
+            value = adj.get_value()
+            page_size = adj.get_page_size()
+            alloc = widget.get_allocation()
+            
+            return False
+        
         self.plot_controls.connect('realize', resize_scrolled)
-        self.plot_area.connect('motion-notify-event', self.motion_notify_event)
-        self.plot_area.connect('leave-notify-event', self.leave_notify_event)
-        self.plot_controls.entry_list.connect('entry-update', self.entry_activate)
-        self.plot_controls.entry_list.connect('entry-toggle', self.entry_toggle)
-        self.plot_controls.entry_list.connect('entry-remove', self.entry_remove)
+        self.plot_area.connect('motion-notify-event', self.on_motion_notify)
+        self.plot_area.connect('leave-notify-event', self.on_leave_notify)
+        self.plot_controls.entry_list.connect('entry-update', self.on_entry_activate)
+        self.plot_controls.entry_list.connect('entry-toggle', self.on_entry_toggle)
+        self.plot_controls.entry_list.connect('entry-remove', self.on_entry_remove)
+        self.plot_controls.entry_list.connect('entry-color-set', self.on_entry_color_set)
     
-    def motion_notify_event(self, widget, event):
+    def on_motion_notify(self, widget, event):
         window_x, window_y = event.x, event.y
         plot_x, plot_y = widget.plot_bg.window_to_plot(window_x, window_y)
         self.status_bar.update_coords(plot_x, plot_y)
         
         return False
     
-    def leave_notify_event(self, widget, event):
+    def on_leave_notify(self, widget, event):
         self.status_bar.clear_coords()
         
         return False
     
-    def entry_toggle(self, widget, entry):
+    def on_entry_toggle(self, widget, entry):
         self.plot_area.emit('refresh')
     
-    def entry_activate(self, widget, entry):
+    def on_entry_color_set(self, widget, entry_row):
+        new_rgba = entry_row.color_button.get_rgba()
+        
+        if entry_row.entry in self.plot_area.plots:
+            self.plot_area.plots[entry_row.entry].rgba = new_rgba
+            self.plot_area.emit('refresh')
+    
+    def on_entry_activate(self, widget, entry):
         plot = None
         try:
             entry.validate()
@@ -65,5 +82,5 @@ class PlotContainer(Gtk.VBox):
         else:
             self.plot_area.remove_plot(entry)
     
-    def entry_remove(self, widget, entry):
+    def on_entry_remove(self, widget, entry):
         self.plot_area.remove_plot(entry)

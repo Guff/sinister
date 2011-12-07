@@ -11,6 +11,8 @@ from sinister.parse import parse_function
 from sys import float_info
 from gi.repository import GObject, Gtk, Gdk
 
+# using a customized HBox rather than a GtkStatusbar because that didn't seem
+# to support text formatting and the stacky api was a little clunky for my needs
 class PlotStatusBar(Gtk.HBox):
     def __init__(self):
         super().__init__(False, 0)
@@ -29,7 +31,8 @@ class PlotStatusBar(Gtk.HBox):
 class FunctionEntry(Gtk.Entry):
     __gsignals__ = {
         'toggle': (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, ()),
-        'remove-button-press': (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, ())
+        'remove-button-press': (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, ()),
+        'create-plot': (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, (object,))
     }
     
     def __init__(self):
@@ -105,7 +108,9 @@ class FunctionEntry(Gtk.Entry):
             self.set_icon_tooltip_text(icon_pos, self.disabled_tooltip)
     
     def create_plot(self, viewport):
-        return FunctionPlot(viewport, self.function)
+        plot = FunctionPlot(viewport, self.function)
+        self.emit('create-plot', plot)
+        return plot
     
     def on_status_icon_press(self, icon, event):
         if icon == Gtk.EntryIconPosition.PRIMARY and event.button == 1:
@@ -144,10 +149,22 @@ class FunctionEntryRow(Gtk.HBox):
         self.entry.set_hexpand(True)
         self.entry.set_margin_left(4)
         
-        self.button = Gtk.Button.new_from_stock('gtk-add')
+        default_color = Gdk.RGBA()
+        default_color.parse(conf.function_plot.color)
         
+        self.color_button = Gtk.ColorButton.new_with_rgba(default_color)
+        
+        self.button = Gtk.Button.new_from_stock('gtk-add')
+        self.button.set_focus_on_click(False)
+        
+        self.entry.connect('create-plot', self.on_create_plot)
+        
+        self.pack_start(self.color_button, False, False, 2)
         self.pack_start(self.entry, True, True, 2)
         self.pack_start(self.button, False, False, 2)
+    
+    def on_create_plot(self, widget, plot):
+        plot.rgba = self.color_button.get_rgba()
 
 class IntervalControl(Gtk.HBox):
     def __init__(self, name, value):
@@ -244,7 +261,9 @@ class FunctionEntryList(Gtk.VBox):
     __gsignals__ = {
         'entry-update': (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, (FunctionEntry,)),
         'entry-remove': (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, (FunctionEntry,)),
-        'entry-toggle': (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, (FunctionEntry,))
+        'entry-toggle': (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, (FunctionEntry,)),
+        'entry-row-focus': (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, (FunctionEntryRow,)),
+        'entry-color-set': (GObject.SIGNAL_RUN_FIRST, GObject.TYPE_NONE, (FunctionEntryRow,))
     }
     
     def __init__(self):
@@ -270,6 +289,9 @@ class FunctionEntryList(Gtk.VBox):
     def entry_toggle(self, entry):
         self.emit('entry-toggle', entry)
     
+    def entry_color_set(self, widget, param, row):
+        self.emit('entry-color-set', row)
+    
     def entry_add(self, position=None):
         entry_row = FunctionEntryRow()
         
@@ -284,8 +306,6 @@ class FunctionEntryList(Gtk.VBox):
         if position is not None:
             self.reorder_child(entry_row, position)
         
-        entry_row.show_all()
-        
         def on_button_click(widget):
             value = GObject.Value()
             value.init(int)
@@ -297,6 +317,11 @@ class FunctionEntryList(Gtk.VBox):
         entry_row.entry.connect('toggle', self.entry_toggle)
         entry_row.entry.connect('activate', self.entry_update)
         entry_row.entry.connect('remove-button-press', self.entry_remove, entry_row)
+        entry_row.color_button.connect('notify::rgba', self.entry_color_set, entry_row)
+        
+        entry_row.show_all()
+        
+        entry_row.entry.grab_focus()
         
         return True
     
