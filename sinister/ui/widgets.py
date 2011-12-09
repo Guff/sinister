@@ -1,12 +1,13 @@
 from sinister.config import conf
 from sinister.plotters import FunctionPlot
-
 from sinister.names import names
 from sinister.exceptions import FunctionCreationError
 from sinister.parse import parse_function
 
 from sys import float_info
+from math import floor, ceil, pi
 from gi.repository import GObject, Gtk, Gdk
+import cairo
 
 # using a customized HBox rather than a GtkStatusbar because that didn't seem
 # to support text formatting and the stacky api was a little clunky for my needs
@@ -338,3 +339,151 @@ class PlotControls(Gtk.VBox):
         
         self.pack_start(self.viewport_controls, False, False, 0)
         self.pack_start(self.entry_list, False, False, 0)
+
+class Metric(object):
+    def __init__(self, metric_name, abbrev, pixels_per_unit, ruler_scale, subdivide):
+        self.metric_name, self.abbrev = metric_name, abbrev
+        self.pixels_per_unit = pixels_per_unit
+        self.ruler_scale, self.subdivide = ruler_scale, subdivide
+
+metrics = [Metric('Pixel', 'Pi', 1.0, [1, 2, 5, 10, 25, 50, 100, 250, 500, 1000], [1, 5, 10, 50, 100]),
+           Metric('Inches', 'In', 72.0, [1, 2, 4, 8, 16, 32, 64, 128, 256, 512], [1, 2, 4, 8, 16]),
+           Metric('Centimeters', 'Cn', 28.35, [1, 2, 5, 10, 25, 50, 100, 250, 500, 1000], [1, 5, 10, 50, 100])]
+
+class Ruler(Gtk.Widget, Gtk.Orientable):
+    def __init__(self, size=14):
+        super().__init__()
+        
+        self.size = size
+        self._position = 0.0
+        
+        sc = self.get_style_context()
+        
+        css_provider = Gtk.CssProvider()
+        
+        sc.add_class('SinisterRuler')
+    
+    def get_position(self):
+        return self._position
+    
+    def set_position(self, position):
+        self._position = position
+        self.queue_draw()
+    
+    def do_get_preferred_height(self):
+        if self.orientation == Gtk.Orientation.HORIZONTAL:
+            return (self.size, self.size)
+        else:
+            return super().do_get_preferred_height()
+    
+    def do_get_preferred_width(self):
+        if self.orientation == Gtk.Orientation.HORIZONTAL:
+            return super().do_get_preferred_width()
+        else:
+            return (self.size, self.size)
+    
+    def do_draw(self, cr):
+        #self.draw_rule(cr)
+        self.draw_pos(cr)
+        
+        return False
+    
+    def draw_rule(self, cr):
+        cr.save()
+        
+        horiz = Gtk.Orientation.HORIZONTAL
+        
+        sc = self.get_style_context()
+        x0, y0, x1, y1 = cr.clip_extents()
+        
+        ruler_fg = sc.get_color(Gtk.StateFlags.NORMAL)
+        Gdk.cairo_set_source_rgba(cr, ruler_fg)
+        
+        cr.restore()
+    
+    def draw_pos(self, cr):
+        cr.save()
+        
+        sc = self.get_style_context()
+        
+        # we need to ensure the arrow size is even, so it doesn't get blurrified
+        if self.orientation == Gtk.Orientation.HORIZONTAL:
+            Gtk.render_arrow(sc,
+                             cr,
+                             pi,
+                             self.position - self.size // 4,
+                             self.size // 2 - 2,
+                             (self.size + (-self.size % 4)) // 2)
+        
+        else:
+            Gtk.render_arrow(sc,
+                             cr,
+                             pi / 2,
+                             self.size // 2 - 2,
+                             self.position - self.size // 4,
+                             (self.size + (-self.size % 4)) // 2)
+        
+        cr.restore()
+    
+    def do_realize(self):
+        self.set_realized(True)
+        
+        alloc = self.get_allocation()
+        
+        attr_mask = Gdk.WindowAttributesType.X
+        attr_mask |= Gdk.WindowAttributesType.Y
+        attr_mask |= Gdk.WindowAttributesType.VISUAL
+        
+        attrs = Gdk.WindowAttr()
+        attrs.window_type = Gdk.WindowType.CHILD
+        attrs.x, attrs.y = alloc.x, alloc.y
+        attrs.width, attrs.height = alloc.width, alloc.height
+        attrs.wclass = Gdk.WindowWindowClass.OUTPUT
+        attrs.visual = self.get_visual()
+        attrs.event_mask = self.get_events()
+        attrs.event_mask |= Gdk.EventMask.EXPOSURE_MASK
+        attrs.event_mask |= Gdk.EventMask.POINTER_MOTION_MASK
+        attrs.event_mask |= Gdk.EventMask.POINTER_MOTION_HINT_MASK
+        
+        window = Gdk.Window(self.get_parent_window(), attrs, attr_mask)
+        window.set_user_data(self)
+        self.set_window(window)
+        
+        sc = self.get_style_context()
+        sc.set_background(window)
+    
+    def do_motion_notify_event(self, event):
+        if self.orientation == Gtk.Orientation.HORIZONTAL:
+            self.position = event.x
+        else:
+            self.position = event.y
+    
+    orientation = GObject.property(type=Gtk.Orientation, default=Gtk.Orientation.HORIZONTAL)
+    position = GObject.property(type=float, getter=get_position, setter=set_position)
+    size = GObject.property(type=int)
+    major_ticks_spacing = GObject.property(type=int, default=100)
+    subdivisions = GObject.property(type=int, default=4)
+
+GObject.type_register(Ruler)
+
+class HRuler(Ruler):
+    def __init__(self, size=None):
+        if size is not None:
+            super().__init__(size)
+        else:
+            super().__init__()
+        
+        self.set_orientation(Gtk.Orientation.HORIZONTAL)
+
+GObject.type_register(HRuler)
+
+class VRuler(Ruler):
+    def __init__(self, size=None):
+        if size is not None:
+            super().__init__(size)
+        else:
+            super().__init__()
+        
+        self.set_orientation(Gtk.Orientation.VERTICAL)
+
+GObject.type_register(VRuler)
