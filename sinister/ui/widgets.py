@@ -359,9 +359,7 @@ class Ruler(Gtk.Widget, Gtk.Orientable):
         
         sc = self.get_style_context()
         
-        css_provider = Gtk.CssProvider()
-        
-        sc.add_class('SinisterRuler')
+        sc.add_class('frame')
     
     def get_position(self):
         return self._position
@@ -383,7 +381,7 @@ class Ruler(Gtk.Widget, Gtk.Orientable):
             return (self.size, self.size)
     
     def do_draw(self, cr):
-        #self.draw_rule(cr)
+        self.draw_rule(cr)
         self.draw_pos(cr)
         
         return False
@@ -391,13 +389,54 @@ class Ruler(Gtk.Widget, Gtk.Orientable):
     def draw_rule(self, cr):
         cr.save()
         
-        horiz = Gtk.Orientation.HORIZONTAL
+        horizontal = self.orientation == Gtk.Orientation.HORIZONTAL
         
         sc = self.get_style_context()
-        x0, y0, x1, y1 = cr.clip_extents()
+        alloc = self.get_allocation()
+        
+        orient, subdivs = self.orientation, self.subdivisions
         
         ruler_fg = sc.get_color(Gtk.StateFlags.NORMAL)
         Gdk.cairo_set_source_rgba(cr, ruler_fg)
+        
+        cr.set_line_width(1.0)
+        
+        if horizontal:
+            span = alloc.width
+        else:
+            span = alloc.height
+        
+        # prevents a bit of code duplication
+        flip_if_vertical = lambda x, y: (x, y) if horizontal else (y, x)
+        
+        for tick in range(0, span + 1, self.major_ticks_spacing):
+            tick_start = flip_if_vertical(tick + 0.5, 0)
+            tick_end = flip_if_vertical(0, (3 * self.size) // 4)
+            
+            cr.move_to(*tick_start)
+            cr.rel_line_to(*tick_end)
+            
+            for subtick in range(1, subdivs):
+                spacing = (subtick * self.major_ticks_spacing) // subdivs
+                
+                if subdivs % 2 == 0 and subtick == subdivs // 2:
+                    subtick_size = self.size // 2
+                else:
+                    subtick_size = (3 * self.size) // 8
+                
+                subtick_start = flip_if_vertical(tick + spacing + 0.5, 0)
+                subtick_end = flip_if_vertical(0, subtick_size + 0.5)
+                
+                cr.move_to(*subtick_start)
+                cr.rel_line_to(*subtick_end)
+            
+        cr.stroke()
+        
+        end = alloc.width if horizontal else alloc.height
+        coords_start = flip_if_vertical(0, self.size - 2)
+        coords_end = flip_if_vertical(end, self.size - 2)
+        
+        Gtk.render_line(sc, cr, *(coords_start + coords_end))
         
         cr.restore()
     
@@ -406,23 +445,19 @@ class Ruler(Gtk.Widget, Gtk.Orientable):
         
         sc = self.get_style_context()
         
-        # we need to ensure the arrow size is even, so it doesn't get blurrified
-        if self.orientation == Gtk.Orientation.HORIZONTAL:
-            Gtk.render_arrow(sc,
-                             cr,
-                             pi,
-                             self.position - self.size // 4,
-                             self.size // 2 - 2,
-                             (self.size + (-self.size % 4)) // 2)
+        horizontal = self.orientation == Gtk.Orientation.HORIZONTAL
         
-        else:
-            Gtk.render_arrow(sc,
-                             cr,
-                             pi / 2,
-                             self.size // 2 - 2,
-                             self.position - self.size // 4,
-                             (self.size + (-self.size % 4)) // 2)
-        
+        x, y = self.position - self.size // 4, self.size // 2 - 2
+        x, y = (x, y) if horizontal else (y, x)
+        Gtk.render_arrow(sc,
+                         cr,
+                         pi if horizontal else pi / 2,
+                         x,
+                         y,
+                        # we need to ensure the arrow size is even,
+                        # so it doesn't get blurrified
+                         (self.size + (-self.size % 4)) // 2)
+                
         cr.restore()
     
     def do_realize(self):
@@ -457,12 +492,15 @@ class Ruler(Gtk.Widget, Gtk.Orientable):
             self.position = event.x
         else:
             self.position = event.y
+        
+        if event.is_hint:
+            event.request_motions()
     
     orientation = GObject.property(type=Gtk.Orientation, default=Gtk.Orientation.HORIZONTAL)
     position = GObject.property(type=float, getter=get_position, setter=set_position)
     size = GObject.property(type=int)
     major_ticks_spacing = GObject.property(type=int, default=100)
-    subdivisions = GObject.property(type=int, default=4)
+    subdivisions = GObject.property(type=int, default=10)
 
 GObject.type_register(Ruler)
 
