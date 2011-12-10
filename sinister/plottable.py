@@ -1,5 +1,3 @@
-import cairo
-
 class Plottable(object):
     def __init__(self, viewport):
         self.viewport = viewport
