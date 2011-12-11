@@ -3,7 +3,7 @@ class History(object):
         self.position = 0
         self.states = []
         
-        self.append(state)
+        self.states.append(state)
     
     def append(self, state):
         if self.position < len(self.states):
@@ -19,3 +19,6 @@ class History(object):
     def redo(self):
         self.position += 1
         return self.states[self.position]
+    
+    def __len__(self):
+        return len(self.states)

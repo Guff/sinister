@@ -65,6 +65,7 @@ class PlotArea(Gtk.DrawingArea):
         cr.restore()
     
     def on_button_press(self, event):
+        self.grab_focus()
         if event.button == 1 and event.type == Gdk.EventType.BUTTON_PRESS:
             if self.button_press_mode == 'drag':
                 self.button_press_drag(event)

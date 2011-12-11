@@ -17,17 +17,17 @@ class SinisterActions(Gtk.ActionGroup):
         self.add_actions([
             ('FileMenu', None, '_File'),
             action_with_callback(cb, 'Quit', Gtk.STOCK_QUIT)
-        ])
+        ], self)
     
     def add_help_actions(self, cb):
         self.add_actions([
             ('HelpMenu', None, '_Help'),
             action_with_callback(cb, 'About', Gtk.STOCK_ABOUT)
-        ])
+        ], self)
     
     def add_edit_actions(self, cb):
         self.add_actions([
             ('EditMenu', None, '_Edit'),
             action_with_callback(cb, 'Undo', Gtk.STOCK_UNDO, None, '<Control>Z'),
             action_with_callback(cb, 'Redo', Gtk.STOCK_REDO, None, '<Shift><Control>Z')
-        ])
+        ], self)
