@@ -34,16 +34,20 @@ class FunctionEntry(Gtk.Entry):
         self.connect('icon-press', FunctionEntry.on_remove_icon_press)
         self.connect('focus-out-event', FunctionEntry.on_focus_out_event)
         self.connect('key-press-event', FunctionEntry.on_key_press_event)
+        self.connect('activate', FunctionEntry.on_activate)
     
     def is_empty(self):
         return (len(self.get_text()) == 0)
     
     def validate(self):
+        if self.is_empty():
+            self.valid = True
+            return
+        
         text = self.get_text()
         
         try:
-            if not self.is_empty():
-                self.function = parse_function(text, names)
+            self.function = parse_function(text, names)
             
             self.valid = True
         except Exception as e:
@@ -112,6 +116,14 @@ class FunctionEntry(Gtk.Entry):
             self.emit('remove-button-press')
         
         return False
+    
+    def on_activate(self):
+        try:
+            self.validate()
+        except FunctionCreationError:
+            pass
+        
+        self.update_status_icon_and_tooltip()
     
     def show_remove_icon(self):
         self.set_icon_from_icon_name(Gtk.EntryIconPosition.SECONDARY, 'gtk-remove')
@@ -211,9 +223,3 @@ class FunctionEntryList(Gtk.VBox):
         entry_row.entry.grab_focus()
         
         return True
-    
-    def update_add_button_position(self):
-        bottom_entry = self.entries[-1]
-        
-        self.remove(self.add_button)
-        self.attach_next_to(self.add_button, bottom_entry, Gtk.PositionType.RIGHT, 1, 1)

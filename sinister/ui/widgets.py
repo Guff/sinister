@@ -84,9 +84,12 @@ class ViewportControls(Gtk.Table):
         the viewport_update callback defined in __init__. I know, it's silly"""
         return iter([self.min_x_box, self.max_x_box, self.min_y_box, self.max_y_box])
     
-    def viewport_update(self, viewport):
+    def viewport_update(self, viewport, record):
         for box, value in zip(self, viewport):
-            box.spin.set_value(value)
+            if box.spin.get_value() != value:
+                box.spin.handler_block_by_func(self.change_viewport)
+                box.spin.set_value(value)
+                box.spin.handler_unblock_by_func(self.change_viewport)
     
     def change_viewport(self, widget, control_name):
         widget.emit_stop_by_name('value-changed')

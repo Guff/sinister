@@ -9,7 +9,7 @@ class Plottable(object):
         
         self.viewport.connect_object('update', Plottable.viewport_update, self)
     
-    def viewport_update(self):
+    def viewport_update(self, record):
         x_interval = (self.viewport.min_x, self.viewport.max_x)
         y_interval = (self.viewport.min_y, self.viewport.max_y)
         

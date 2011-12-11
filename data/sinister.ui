@@ -6,5 +6,9 @@
         <menu action='HelpMenu'>
             <menuitem action='About'/>
         </menu>
+        <menu action='EditMenu'>
+            <menuitem action='Undo'/>
+            <menuitem action='Redo'/>
+        </menu>
     </menubar>
 </ui>

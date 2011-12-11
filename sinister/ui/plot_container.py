@@ -15,8 +15,12 @@ class PlotContainer(Gtk.VBox):
         adj = scrolled_controls.get_vadjustment()
         
         vpane = Gtk.VPaned()
-        vpane.pack1(scrolled_controls, False, False)
-        vpane.pack2(self.plot_area, True, False)
+        cframe = Gtk.Frame()
+        pframe = Gtk.Frame()
+        cframe.add(scrolled_controls)
+        pframe.add(self.plot_area)
+        vpane.pack1(cframe, False, False)
+        vpane.pack2(pframe, True, False)
         
         self.pack_start(vpane, True, True, 0)
         
@@ -38,7 +42,7 @@ class PlotContainer(Gtk.VBox):
         self.plot_controls.connect('realize', resize_scrolled)
         self.plot_area.connect('motion-notify-event', self.on_motion_notify)
         self.plot_area.connect('leave-notify-event', self.on_leave_notify)
-        self.plot_controls.entry_list.connect('entry-update', self.on_entry_activate)
+        self.plot_controls.entry_list.connect('entry-update', self.on_entry_update)
         self.plot_controls.entry_list.connect('entry-toggle', self.on_entry_toggle)
         self.plot_controls.entry_list.connect('entry-remove', self.on_entry_remove)
         self.plot_controls.entry_list.connect('entry-color-set', self.on_entry_color_set)
@@ -65,19 +69,9 @@ class PlotContainer(Gtk.VBox):
             self.plot_area.plots[entry_row.entry].rgba = new_rgba
             self.plot_area.emit('refresh')
     
-    def on_entry_activate(self, widget, entry):
-        plot = None
-        try:
-            entry.validate()
-        except FunctionCreationError:
-            pass
-        else:
-            if not entry.is_empty():
-                plot = entry.create_plot(self.plot_area.viewport)
-        
-        entry.update_status_icon_and_tooltip()
-        
-        if plot is not None:
+    def on_entry_update(self, widget, entry):
+        if entry.valid and not entry.is_empty():
+            plot = entry.create_plot(self.plot_area.viewport)
             self.plot_area.update_plot(entry, plot)
         else:
             self.plot_area.remove_plot(entry)

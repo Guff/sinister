@@ -113,10 +113,7 @@ class PlotArea(Gtk.DrawingArea):
             min_x, min_y = widget.plot_bg.window_to_plot(x0, y1)
             max_x, max_y = widget.plot_bg.window_to_plot(x1, y0)
             
-            widget.viewport.update({'min_x': min_x,
-                                    'max_x': max_x,
-                                    'min_y': min_y,
-                                    'max_y': max_y})
+            widget.viewport.update(min_x, max_x, min_y, max_y)
             
             widget.handler_disconnect(handles['motion'])
             widget.handler_disconnect(handles['release'])
@@ -150,17 +147,26 @@ class PlotArea(Gtk.DrawingArea):
             x, y = event.x, event.y
             dx = x_ratio * (x - prev_coords['x'])
             dy = y_ratio * (y - prev_coords['y'])
-            widget.viewport.translate(dx, dy)
+            widget.viewport.translate(dx, dy, record=False)
             
             prev_coords['x'] = x
             prev_coords['y'] = y
+            
+            return False
         
         def on_button_release(widget, event, handles):
             if event.button == 1:
+                x, y = event.x, event.y
+                dx = x_ratio * (x - prev_coords['x'])
+                dy = y_ratio * (y - prev_coords['y'])
+                widget.viewport.translate(dx, dy)
+                
                 widget.get_window().set_cursor(None)
+                
                 widget.handler_disconnect(handles['motion'])
                 widget.handler_disconnect(handles['release'])
-                return True
+                
+                return False
             else:
                 return False
         
@@ -221,7 +227,7 @@ class PlotArea(Gtk.DrawingArea):
             del self.plots[entry]
             self.emit('refresh')
     
-    def on_viewport_update(self, viewport):
+    def on_viewport_update(self, viewport, record):
         self.emit('refresh')
     
     def do_refresh(self):

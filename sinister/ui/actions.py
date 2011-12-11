@@ -1,24 +1,33 @@
 from gi.repository import Gtk
 
+# i am lazy; this just packs the action tuple with Nones so a callback can be
+# connected on creation of the action
+def action_with_callback(cb, *args):
+    return args + (None,) * (5 - len(args)) + (cb,)
+
 class SinisterActions(Gtk.ActionGroup):
     def __init__(self, activate_cb):
         super().__init__('SinisterActions')
         
-        self.add_file_actions()
-        self.add_help_actions()
-        
-        for action in self.list_actions():
-            action.connect('activate', activate_cb)
+        self.add_file_actions(activate_cb)
+        self.add_help_actions(activate_cb)
+        self.add_edit_actions(activate_cb)
     
-    def add_file_actions(self):
+    def add_file_actions(self, cb):
         self.add_actions([
             ('FileMenu', None, '_File'),
-            ('Quit', Gtk.STOCK_QUIT)
+            action_with_callback(cb, 'Quit', Gtk.STOCK_QUIT)
         ])
-        
     
-    def add_help_actions(self):
+    def add_help_actions(self, cb):
         self.add_actions([
             ('HelpMenu', None, '_Help'),
-            ('About', Gtk.STOCK_ABOUT)
+            action_with_callback(cb, 'About', Gtk.STOCK_ABOUT)
+        ])
+    
+    def add_edit_actions(self, cb):
+        self.add_actions([
+            ('EditMenu', None, '_Edit'),
+            action_with_callback(cb, 'Undo', Gtk.STOCK_UNDO, None, '<Control>Z'),
+            action_with_callback(cb, 'Redo', Gtk.STOCK_REDO, None, '<Shift><Control>Z')
         ])
