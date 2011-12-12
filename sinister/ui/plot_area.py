@@ -132,11 +132,12 @@ class PlotArea(Gtk.DrawingArea):
         handles['motion'] = self.connect('motion-notify-event', on_motion_notify)
     
     def button_press_drag(self, event):
-        self.get_window().set_cursor(Gdk.Cursor(Gdk.CursorType.HAND1))
+        window = self.get_window()
+        window.set_cursor(Gdk.Cursor(Gdk.CursorType.HAND1))
         
         allocation = self.get_allocation()
         width, height = allocation.width, allocation.height
-        prev_coords = {'x': event.x, 'y': event.y}
+        prev_coords = {'x': round(event.x), 'y': round(event.y)}
         
         viewport_width = self.viewport.max_x - self.viewport.min_x
         viewport_height = self.viewport.max_y - self.viewport.min_y
@@ -145,10 +146,15 @@ class PlotArea(Gtk.DrawingArea):
         y_ratio = viewport_height / height
         
         def on_motion_notify(widget, event):
-            x, y = event.x, event.y
-            dx = x_ratio * (x - prev_coords['x'])
-            dy = y_ratio * (y - prev_coords['y'])
-            widget.viewport.translate(dx, dy, record=False)
+            x, y = round(event.x), round(event.y)
+            dx = x - prev_coords['x']
+            dy = y - prev_coords['y']
+            
+            widget.viewport.handler_block_by_func(widget.on_viewport_update)
+            widget.viewport.translate(x_ratio * dx, y_ratio * dy, record=False)
+            widget.viewport.handler_unblock_by_func(widget.on_viewport_update)
+            
+            window.scroll(dx, dy)
             
             prev_coords['x'] = x
             prev_coords['y'] = y
@@ -156,20 +162,25 @@ class PlotArea(Gtk.DrawingArea):
             return False
         
         def on_button_release(widget, event, handles):
-            if event.button == 1:
-                x, y = event.x, event.y
-                dx = x_ratio * (x - prev_coords['x'])
-                dy = y_ratio * (y - prev_coords['y'])
-                widget.viewport.translate(dx, dy)
-                
-                widget.get_window().set_cursor(None)
-                
-                widget.handler_disconnect(handles['motion'])
-                widget.handler_disconnect(handles['release'])
-                
+            if event.button != 1:
                 return False
-            else:
-                return False
+            
+            x, y = round(event.x), round(event.y)
+            dx = x - prev_coords['x']
+            dy = y - prev_coords['y']
+                            
+            widget.viewport.handler_block_by_func(widget.on_viewport_update)
+            widget.viewport.translate(x_ratio * dx, y_ratio * dy)
+            widget.viewport.handler_unblock_by_func(widget.on_viewport_update)
+            
+            window.scroll(dx, dy)
+            
+            window.set_cursor(None)
+            
+            widget.handler_disconnect(handles['motion'])
+            widget.handler_disconnect(handles['release'])
+            
+            return False
         
         # passing a mutable container (a dict in this case), which is then
         # updated to hold the handle IDs, to the release handler was the best
