@@ -1,6 +1,6 @@
 from sinister.config import conf
 from sinister.exceptions import FunctionCreationError
-from sinister.parse import parse_function
+from sinister.parse import Parser
 from sinister.plotters import FunctionPlot
 from sinister.names import names
 
@@ -47,7 +47,7 @@ class FunctionEntry(Gtk.Entry):
         text = self.get_text()
         
         try:
-            self.function = parse_function(text, names)
+            self.function = Parser(text, names).create_function()
             
             self.valid = True
         except Exception as e:
