@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="apps.sinister" path="/apps/sinister/">
+    <key type="b" name="dicks">
+      <default>false</default>
+      <summary>My boolean setting</summary>
+      <description>This is an example of a boolean setting.</description>
+    </key>
+  </schema>
+</schemalist>

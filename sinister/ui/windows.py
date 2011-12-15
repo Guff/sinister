@@ -49,10 +49,10 @@ class SinisterMainWindow(Gtk.Window):
         
         self.viewport.connect('update', self.on_viewport_update, undo_action, redo_action)
         
-        menu_bar = manager.get_widget('/MenuBar')
+        menubar = manager.get_widget('/Menubar')
         
         vbox = Gtk.VBox(False, 0)
-        vbox.pack_start(menu_bar, False, False, 0)
+        vbox.pack_start(menubar, False, False, 0)
         vbox.pack_start(plot_container, True, True, 0)
         
         self.add(vbox)
@@ -61,6 +61,8 @@ class SinisterMainWindow(Gtk.Window):
             self.maximize()
         else:
             self.set_default_size(conf.window.default_width, conf.window.default_height)
+        
+        self.preferences_builder = PreferencesBuilder()
         
         self.connect('delete-event', Gtk.main_quit)
     
@@ -100,8 +102,13 @@ class SinisterMainWindow(Gtk.Window):
         redo_action.set_sensitive(self.history.position != len(self.history) - 1)
         undo_action.set_sensitive(True)
     
+    def show_preferences(self):
+        self.preferences_builder.dialog.run()
+        self.preferences_builder.dialog.hide()
+    
     def on_action_activate(self, action, action_group):
         name = action.get_name()
+        
         if name == 'Quit':
             Gtk.main_quit()
         elif name == 'About':
@@ -110,3 +117,17 @@ class SinisterMainWindow(Gtk.Window):
             self.on_undo_action(action, action_group.get_action('Redo'))
         elif name == 'Redo':
             self.on_redo_action(action, action_group.get_action('Undo'))
+        elif name == 'Preferences':
+            self.show_preferences()
+
+class PreferencesBuilder(object):
+    def __init__(self):
+        builder = Gtk.Builder()
+        builder.add_from_file('data/preferences.glade')
+        
+        self.dialog = builder.get_object('preferences_dialog')
+        
+        builder.connect_signals(self)
+    
+    def close_cb(self, widget):
+        self.dialog.response(0)

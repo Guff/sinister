@@ -1,14 +1,16 @@
 <ui>
-    <menubar name='MenuBar'>
+    <menubar name='Menubar'>
         <menu action='FileMenu'>
             <menuitem action='Quit'/>
-        </menu>
-        <menu action='HelpMenu'>
-            <menuitem action='About'/>
         </menu>
         <menu action='EditMenu'>
             <menuitem action='Undo'/>
             <menuitem action='Redo'/>
+            <separator/>
+            <menuitem action='Preferences'/>
+        </menu>
+        <menu action='HelpMenu'>
+            <menuitem action='About'/>
         </menu>
     </menubar>
 </ui>

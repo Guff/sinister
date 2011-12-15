@@ -10,8 +10,8 @@ class SinisterActions(Gtk.ActionGroup):
         super().__init__('SinisterActions')
         
         self.add_file_actions(activate_cb)
-        self.add_help_actions(activate_cb)
         self.add_edit_actions(activate_cb)
+        self.add_help_actions(activate_cb)
     
     def add_file_actions(self, cb):
         self.add_actions([
@@ -29,5 +29,6 @@ class SinisterActions(Gtk.ActionGroup):
         self.add_actions([
             ('EditMenu', None, '_Edit'),
             action_with_callback(cb, 'Undo', Gtk.STOCK_UNDO, None, '<Control>Z'),
-            action_with_callback(cb, 'Redo', Gtk.STOCK_REDO, None, '<Shift><Control>Z')
+            action_with_callback(cb, 'Redo', Gtk.STOCK_REDO, None, '<Shift><Control>Z'),
+            action_with_callback(cb, 'Preferences', Gtk.STOCK_PREFERENCES)
         ], self)
