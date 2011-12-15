@@ -114,7 +114,7 @@ class PlotArea(Gtk.DrawingArea):
             min_x, min_y = widget.plot_bg.window_to_plot(x0, y1)
             max_x, max_y = widget.plot_bg.window_to_plot(x1, y0)
             
-            widget.viewport.update(min_x, max_x, min_y, max_y)
+            widget.viewport.update((min_x, max_x, min_y, max_y))
             
             widget.handler_disconnect(handles['motion'])
             widget.handler_disconnect(handles['release'])
