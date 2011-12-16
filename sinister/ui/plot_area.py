@@ -244,3 +244,13 @@ class PlotArea(Gtk.DrawingArea):
     
     def do_refresh(self):
         self.queue_draw()
+    
+    def scale_height_to_width(self):
+        window_width, window_height = self.dimensions
+        min_x, max_x, min_y, max_y = self.viewport
+        
+        width_ratio = (max_x - min_x) / window_width
+        height_ratio = (max_y - min_y) / window_height
+        d = width_ratio / height_ratio
+        
+        self.viewport.update({'min_y': min_y * d, 'max_y': max_y * d})
