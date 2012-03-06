@@ -140,7 +140,7 @@ class FunctionEntryRow(Gtk.HBox):
         self.entry.set_margin_left(4)
         
         default_color = Gdk.RGBA()
-        default_color.parse(conf.function_plot.color)
+        default_color.parse(conf.function_plot.plot_color)
         
         self.color_button = Gtk.ColorButton.new_with_rgba(default_color)
         

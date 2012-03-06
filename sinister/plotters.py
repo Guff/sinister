@@ -10,7 +10,7 @@ class FunctionPlot(Plottable):
         
         self.func = func
         self.rgba = Gdk.RGBA()
-        self.rgba.parse(conf.function_plot.color)
+        self.rgba.parse(conf.function_plot.plot_color)
     
     def plot(self, cr):
         width, height = self.dimensions
