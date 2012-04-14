@@ -32,3 +32,8 @@ class SinisterActions(Gtk.ActionGroup):
             action_with_callback(cb, 'Redo', Gtk.STOCK_REDO, None, '<Shift><Control>Z'),
             action_with_callback(cb, 'Preferences', Gtk.STOCK_PREFERENCES)
         ], self)
+        
+        drag_toggle = Gtk.ToggleAction('Click To Drag', 'Click To Drag', None, None)
+        drag_toggle.set_active(True)
+        drag_toggle.connect('toggled', cb, self)
+        self.add_action_with_accel(drag_toggle, None)

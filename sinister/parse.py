@@ -12,6 +12,7 @@ class Parser(ast.NodeVisitor):
         self.names.add(node.id)
     
     def validate(self):
+        return
         if not self.names.issubset(self.defined_names):
             undefined_names = self.names.difference(self.defined_names)
             raise NameError("undefined names: {}".format(', '.join(undefined_names)))

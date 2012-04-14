@@ -24,6 +24,8 @@ class SinisterMainWindow(Gtk.Window):
         plot_area = PlotArea(self.viewport, plot_bg)
         plot_container = PlotContainer(plot_area)
         
+        self.plot_area = plot_area
+        
         try:
             ui_file = open(os.path.join('data', 'sinister.ui'))
         except IOError:
@@ -102,6 +104,9 @@ class SinisterMainWindow(Gtk.Window):
         redo_action.set_sensitive(self.history.position != len(self.history) - 1)
         undo_action.set_sensitive(True)
     
+    def on_drag_toggle_action(self):
+        self.plot_area.toggle_drag()
+    
     def show_preferences(self):
         self.preferences_builder.dialog.run()
         self.preferences_builder.dialog.hide()
@@ -117,6 +122,8 @@ class SinisterMainWindow(Gtk.Window):
             self.on_undo_action(action, action_group.get_action('Redo'))
         elif name == 'Redo':
             self.on_redo_action(action, action_group.get_action('Undo'))
+        elif name == 'Click To Drag':
+            self.on_drag_toggle_action()
         elif name == 'Preferences':
             self.show_preferences()
 

@@ -7,6 +7,8 @@
             <menuitem action='Undo'/>
             <menuitem action='Redo'/>
             <separator/>
+            <menuitem action='Click To Drag'/>
+            <separator/>
             <menuitem action='Preferences'/>
         </menu>
         <menu action='HelpMenu'>

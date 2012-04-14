@@ -60,8 +60,8 @@ class GeneralConfig(BaseConfig):
     settings = [Setting(name='use_cython', default=False)]
 
 class WindowConfig(BaseConfig):
-    settings = [Setting(name='default_width', default=500),
-                Setting(name='default_height', default=400),
+    settings = [Setting(name='default_width', default=640),
+                Setting(name='default_height', default=480),
                 Setting(name='maximize_on_start', default=False)]
 
 class ViewportConfig(BaseConfig):

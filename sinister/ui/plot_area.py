@@ -74,6 +74,9 @@ class PlotArea(Gtk.DrawingArea):
         
         return False
     
+    def toggle_drag(self):
+        self.button_press_mode = 'drag' if self.button_press_mode == 'zoom-rect' else 'zoom-rect'
+    
     def button_press_zoom_rect(self, event):
         allocation = self.get_allocation()
         width, height = allocation.width, allocation.height
